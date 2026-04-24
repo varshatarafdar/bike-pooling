@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Create Ride - BikePool</title>
+
+<link rel="stylesheet" href="css/styles.css">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+</head>
+<style>
+/* ===============================
+   🌈 GLOBAL STYLES
+=============================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background: #0f0f0f;
+  color: white;
+  overflow-x: hidden;
+}
+
+/* 🌗 DARK MODE */
+body.dark {
+  background: #000;
+  color: #eee;
+}
+
+/* ===============================
+   🌈 BACKGROUND GRADIENT
+=============================== */
+.bg-gradient {
+  position: fixed;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(270deg, #00ffcc, #00ccff, #ff00cc, #ffcc00);
+  background-size: 800% 800%;
+  animation: gradientMove 15s ease infinite;
+  z-index: -1;
+  opacity: 0.15;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ===============================
+   🧊 GLASS EFFECT
+=============================== */
+.glass {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(15px);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.2);
+}
+
+/* ===============================
+   🧭 NAVBAR
+=============================== */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 20px;
+  margin: 10px;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ===============================
+   🔘 BUTTONS
+=============================== */
+.primary-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(45deg,#00ffcc,#00ccff);
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.primary-btn:hover {
+  transform: scale(1.05);
+}
+
+.secondary-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 2px solid #00ffcc;
+  background: transparent;
+  color: #00ffcc;
+  cursor: pointer;
+}
+
+.icon-btn {
+  padding: 10px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  cursor: pointer;
+}
+
+/* ===============================
+   🧾 INPUTS
+=============================== */
+.input-group {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.1);
+}
+
+.input-group input,
+.input-group select {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: white;
+  margin-left: 10px;
+}
+
+/* ===============================
+   📦 BOTTOM SHEET
+=============================== */
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  padding: 20px;
+  border-radius: 20px 20px 0 0;
+}
+
+/* ===============================
+   📍 DROPDOWN
+=============================== */
+.dropdown {
+  background: #111;
+  border-radius: 10px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.dropdown-item {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.dropdown-item:hover {
+  background: #222;
+}
+
+/* ===============================
+   🔄 LOADER
+=============================== */
+.loader {
+  margin: 15px auto;
+  border: 4px solid #ccc;
+  border-top: 4px solid #00ffcc;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+}
+
+.hidden {
+  display: none;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===============================
+   🔔 TOAST
+=============================== */
+#toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  padding: 10px 20px;
+  border-radius: 20px;
+  display: none;
+}
+
+/* ===============================
+   ✨ ANIMATIONS
+=============================== */
+.fade {
+  animation: fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn {
+  from {opacity:0; transform:translateY(20px);}
+  to {opacity:1; transform:translateY(0);}
+}
+
+.animate-pop {
+  animation: pop 0.5s ease;
+}
+
+@keyframes pop {
+  0% {transform:scale(0.8); opacity:0;}
+  100% {transform:scale(1); opacity:1;}
+}
+
+/* ===============================
+   📊 ADMIN CARDS
+=============================== */
+.card {
+  padding: 20px;
+  margin: 10px;
+  border-radius: 15px;
+  background: rgba(255,255,255,0.08);
+  text-align: center;
+}
+
+.card h2 {
+  font-size: 28px;
+}
+
+.card p {
+  opacity: 0.7;
+}
+
+
+</style>
+</html>
+<body class="light fade">
+
+<div class="bg-gradient"></div>
+
+<header class="navbar glass">
+  <div class="logo">🚲 BikePool</div>
+
+  <div class="nav-actions">
+    <button class="icon-btn" onclick="goTo('dashboard.html')">
+      <i class="fas fa-home"></i>
+    </button>
+
+    <button class="icon-btn" onclick="toggleTheme()">
+      <i id="themeIcon" class="fas fa-moon"></i>
+    </button>
+  </div>
+</header>
+
+<!-- 🌍 MAP -->
+<div class="map-container">
+  <div id="map"></div>
+</div>
+
+<!-- 📍 STATUS -->
+<div id="statusBox" class="status glass pulse">
+  📍 Click map to select Pickup
+</div>
+
+<!-- 🔥 PANEL -->
+<section class="bottom-sheet glass">
+
+  <h3>Create Ride 🚀</h3>
+
+  <div class="input-group">
+    <i class="fas fa-map-marker-alt"></i>
+    <input id="start" placeholder="Pickup location" readonly>
+  </div>
+
+  <div class="input-group">
+    <i class="fas fa-flag-checkered"></i>
+    <input id="destination" placeholder="Destination" readonly>
+  </div>
+
+  <div class="input-group">
+    <i class="fas fa-clock"></i>
+    <input id="time" type="time">
+  </div>
+
+  <button onclick="handleCreateRide()" class="primary-btn ripple">
+    🚀 Create & Find Match
+  </button>
+
+  <div id="loader" class="loader hidden"></div>
+
+</section>
+
+<div id="toast"></div>
+
+<script src="js/app.js"></script>
+
+<script>
+
+const API = "http://127.0.0.1:5000";
+
+if (!localStorage.getItem("token")) {
+  window.location.href = "login.html";
+}
+
+let map;
+let pickupMarker = null;
+let dropMarker = null;
+
+let pickupData = null;
+let dropData = null;
+
+let mode = "pickup";
+
+/* ==============================
+   🌍 INIT MAP
+============================== */
+function initMap(){
+
+  map = L.map('map').setView([18.5204, 73.8567], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+    .addTo(map);
+
+  map.on("click", onMapClick);
+}
+
+/* ==============================
+   📍 MAP CLICK
+============================== */
+function onMapClick(e){
+
+  let lat = e.latlng.lat;
+  let lng = e.latlng.lng;
+
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+  .then(res => res.json())
+  .then(data => {
+
+    let address = data.display_name;
+
+    if(mode === "pickup"){
+
+      pickupData = { lat, lng, address };
+
+      document.getElementById("start").value = address;
+
+      if(pickupMarker) map.removeLayer(pickupMarker);
+
+      pickupMarker = L.marker([lat,lng]).addTo(map)
+        .bindPopup("Pickup 📍").openPopup();
+
+      mode = "drop";
+
+      document.getElementById("statusBox").innerText = "🏁 Select Destination";
+
+    } else {
+
+      dropData = { lat, lng, address };
+
+      document.getElementById("destination").value = address;
+
+      if(dropMarker) map.removeLayer(dropMarker);
+
+      dropMarker = L.marker([lat,lng]).addTo(map)
+        .bindPopup("Destination 🏁").openPopup();
+
+      document.getElementById("statusBox").innerText = "🚀 Ready to create ride";
+    }
+
+  });
+}
+
+/* ==============================
+   🚀 CREATE RIDE
+============================== */
+async function handleCreateRide(){
+
+  let time = document.getElementById("time").value;
+
+  if(!pickupData || !dropData || !time){
+    showToast("⚠️ Complete all fields");
+    return;
+  }
+
+  let payload = {
+    start: pickupData.address,
+    destination: dropData.address,
+    start_lat: pickupData.lat,
+    start_lng: pickupData.lng,
+    dest_lat: dropData.lat,
+    dest_lng: dropData.lng,
+    time: time
+  };
+
+  // SAVE LOCALLY (IMPORTANT FOR ACTIVE RIDE)
+  localStorage.setItem("start_lat", pickupData.lat);
+  localStorage.setItem("start_lng", pickupData.lng);
+  localStorage.setItem("dest_lat", dropData.lat);
+  localStorage.setItem("dest_lng", dropData.lng);
+
+  document.getElementById("loader").classList.remove("hidden");
+  document.getElementById("statusBox").innerText = "🔍 Searching riders...";
+
+  try {
+
+    let res = await fetch(`${API}/add_ride`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": localStorage.getItem("token")
+      },
+      body: JSON.stringify(payload)
+    });
+
+    let data = await res.json();
+
+    if(data.status === "matched"){
+      showToast("🎉 Match Found!");
+      window.location.href = "active_ride.html";
+    } else {
+      pollMatch();
+    }
+
+  } catch {
+    showToast("Server Error ❌");
+  }
+}
+
+/* ==============================
+   🔄 POLLING SYSTEM
+============================== */
+function pollMatch(){
+
+  let user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  let interval = setInterval(async () => {
+
+    try {
+
+      let res = await fetch(`${API}/pool_status/${user.id}`);
+      let data = await res.json();
+
+      if(data.status === "matched"){
+
+        clearInterval(interval);
+
+        showToast("🎉 Match Found!");
+
+        setTimeout(()=>{
+          window.location.href = "active_ride.html";
+        },1500);
+      }
+
+    } catch {}
+
+  }, 3000);
+}
+
+/* ==============================
+   🌙 THEME
+============================== */
+function toggleTheme(){
+  document.body.classList.toggle("dark");
+
+  let icon = document.getElementById("themeIcon");
+  icon.classList.toggle("fa-moon");
+  icon.classList.toggle("fa-sun");
+}
+
+/* INIT */
+document.addEventListener("DOMContentLoaded", initMap);
+
+</script>
+
+</body>
+</html>

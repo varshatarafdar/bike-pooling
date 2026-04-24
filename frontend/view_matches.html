@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Find Matches - BikePool</title>
+
+<link rel="stylesheet" href="css/styles.css">
+
+<!-- 🌍 Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- 🌟 Icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+#map {
+  height: 100%;
+  width: 100%;
+  border-radius: 18px;
+}
+
+.map-container {
+  height: 60vh;
+  margin: 10px;
+  border-radius: 18px;
+  overflow: hidden;
+}
+</style>
+
+</head>
+
+<body class="light fade">
+
+<div class="bg-gradient"></div>
+
+<!-- 🔝 NAVBAR -->
+<header class="navbar glass">
+  <div class="logo">🔍 Live Matches</div>
+
+  <div class="nav-actions">
+    <button class="icon-btn ripple" onclick="goTo('dashboard.html')">
+      <i class="fas fa-home"></i>
+    </button>
+  </div>
+</header>
+
+<!-- 🌍 MAP -->
+<div class="map-container">
+  <div id="map"></div>
+</div>
+
+<!-- 🔥 MATCHES PANEL -->
+<section class="bottom-sheet glass">
+
+  <div class="drag-bar"></div>
+
+  <h3>🚲 Nearby Riders</h3>
+
+  <div id="rides"></div>
+
+  <div id="noMatch" style="text-align:center; margin-top:10px;">
+    🔄 Searching for riders...
+  </div>
+
+</section>
+
+<div id="toast"></div>
+
+<script src="js/app.js"></script>
+
+<script>
+
+const API = "http://127.0.0.1:5000";
+
+let map;
+let markers = [];
+
+/* ==============================
+   🌍 INIT MAP
+============================== */
+function initMap(){
+
+  map = L.map('map').setView([21.25, 81.63], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(map);
+}
+
+/* ==============================
+   🤝 JOIN RIDE
+============================== */
+async function joinRide(rideId){
+
+  let token = localStorage.getItem("token");
+
+  try{
+
+    await fetch(`${API}/create_pool`, {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":token
+      },
+      body: JSON.stringify({ ride_id: rideId })
+    });
+
+    showToast("⚡ Ride Joined!");
+
+    setTimeout(()=>{
+      window.location="active_ride.html";
+    },1200);
+
+  }catch{
+    showToast("Error joining ride ❌");
+  }
+}
+
+
+/* ==============================
+   🔍 LOAD MATCHES
+============================== */
+async function loadMatchesUI() {
+
+  let container = document.getElementById("rides");
+  let noMatch = document.getElementById("noMatch");
+
+  container.innerHTML = "🔄 Loading...";
+
+  try {
+
+    let res = await fetch(API + "/my_matches", {
+      headers: {
+        Authorization: localStorage.getItem("token"),
+      },
+    });
+
+    let data = await res.json();
+    let matches = data.matches;
+
+    container.innerHTML = "";
+
+    // CLEAR OLD MARKERS
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+
+    if (!matches || matches.length === 0) {
+
+      noMatch.innerText = "❌ No matches yet... Auto searching";
+      noMatch.style.display = "block";
+
+      autoMatch(); // 🔥 fallback
+      return;
+    }
+
+    noMatch.style.display = "none";
+
+    matches.forEach((m) => {
+
+      // 📍 ADD MAP MARKER
+      let marker = L.marker([m.start_lat, m.start_lng])
+        .addTo(map)
+        .bindPopup(`👤 ${m.name}`);
+
+      markers.push(marker);
+
+      // 🎴 CARD
+      let card = document.createElement("div");
+      card.className = "ride-card glass animate-pop";
+
+      card.innerHTML = `
+        <h4>👤 ${m.name}</h4>
+        <p>📍 ${m.start} → ${m.destination}</p>
+        <p>⏱ ${m.time}</p>
+        <button class="primary-btn ripple" onclick="joinRide(${m.ride_id})">
+          🤝 Join Ride
+        </button>
+      `;
+
+      container.appendChild(card);
+    });
+
+  } catch {
+    container.innerHTML = "❌ Server error";
+  }
+}
+
+
+/* ==============================
+   🤖 AUTO MATCH (BACKEND LINK)
+============================== */
+async function autoMatch(){
+
+  let token = localStorage.getItem("token");
+  let user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  if(!user.id) return;
+
+  try{
+
+    let res = await fetch(`${API}/auto_match`, {
+      method: "POST",
+      headers: {
+        "Content-Type":"application/json"
+      },
+      body: JSON.stringify({ user_id: user.id })
+    });
+
+    let data = await res.json();
+
+    if(data.message === "🎉 Pool Created"){
+      showToast("🎉 Auto Match Found!");
+
+      setTimeout(()=>{
+        window.location="active_ride.html";
+      },1200);
+    }
+
+  }catch{
+    console.log("Auto match failed");
+  }
+}
+
+
+/* ==============================
+   🚀 INIT
+============================== */
+document.addEventListener("DOMContentLoaded", () => {
+
+  if (!localStorage.getItem("token")) {
+    window.location.href = "login.html";
+  }
+
+  initMap();
+  loadMatchesUI();
+
+  // 🔄 Auto refresh
+  setInterval(loadMatchesUI, 4000);
+});
+
+</script>
+
+</body>
+</html>

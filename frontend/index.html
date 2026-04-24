@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Bike Pooling - Smart Ride System</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+<style>
+
+/* ================= GLOBAL ================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(-45deg, #000000, #111111, #FFD700, #000000);
+  background-size: 400% 400%;
+  animation: gradientMove 8s ease infinite;
+}
+
+/* ================= ANIMATION BG ================= */
+@keyframes gradientMove {
+  0% {background-position:0% 50%;}
+  50% {background-position:100% 50%;}
+  100% {background-position:0% 50%;}
+}
+
+/* ================= FLOATING ORBS ================= */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.15;
+  background: #FFD700;
+  animation: float 6s infinite ease-in-out;
+}
+
+.orb1 { width: 120px; height: 120px; top: 10%; left: 10%; }
+.orb2 { width: 180px; height: 180px; bottom: 10%; right: 15%; }
+.orb3 { width: 80px; height: 80px; top: 50%; left: 80%; }
+
+@keyframes float {
+  0%,100% {transform: translateY(0);}
+  50% {transform: translateY(-30px);}
+}
+
+/* ================= CARD ================= */
+.container {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 50px;
+  border-radius: 25px;
+  backdrop-filter: blur(20px);
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.1);
+  animation: fadeIn 1.2s ease;
+}
+
+h1 {
+  font-size: 3rem;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+h1 span {
+  color: #FFD700;
+}
+
+p {
+  color: rgba(255,255,255,0.8);
+  margin-bottom: 30px;
+}
+
+/* ================= BUTTONS ================= */
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+button {
+  padding: 14px 30px;
+  border-radius: 50px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+  font-weight: 600;
+}
+
+.login {
+  background: #fff;
+  color: #000;
+}
+
+.register {
+  background: #FFD700;
+  color: #000;
+}
+
+button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+/* ================= ANIMATION ================= */
+@keyframes fadeIn {
+  from {opacity:0; transform: translateY(20px);}
+  to {opacity:1; transform: translateY(0);}
+}
+
+/* ================= SMALL TAG ================= */
+.tag {
+  margin-top: 20px;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- 🌟 FLOATING EFFECTS -->
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<!-- 🚀 MAIN CARD -->
+<div class="container">
+
+    <h1>🚲 Smart <span>Bike Pooling</span></h1>
+    <p>Fast • Smart • Eco-Friendly Ride Sharing System</p>
+
+    <div class="buttons">
+        <button class="login" onclick="goLogin()">Login</button>
+        <button class="register" onclick="goRegister()">Register</button>
+    </div>
+
+    <div class="tag">
+        ⚡ AI-based matching • Live tracking • Smart routing
+    </div>
+
+</div>
+
+<script>
+
+function goLogin(){
+    window.location.href = "login.html";
+}
+
+function goRegister(){
+    window.location.href = "register.html";
+}
+
+</script>
+
+</body>
+</html>

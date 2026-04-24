@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Register - BikePool</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+
+/* ================= BACKGROUND ================= */
+body {
+  height: 100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:Poppins;
+  background: linear-gradient(-45deg,#000,#111,#FFD700,#000);
+  background-size:400% 400%;
+  animation:bg 10s infinite;
+}
+
+@keyframes bg {
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+
+/* ================= CARD ================= */
+.card {
+  width:420px;
+  padding:30px;
+  border-radius:20px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(15px);
+  color:white;
+  text-align:center;
+  box-shadow:0 20px 50px rgba(0,0,0,0.4);
+  animation:pop 0.8s ease;
+}
+
+@keyframes pop {
+  from{transform:scale(0.8);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+
+/* ================= INPUT ================= */
+.input {
+  margin:10px 0;
+  display:flex;
+  align-items:center;
+  background:rgba(255,255,255,0.1);
+  padding:10px;
+  border-radius:10px;
+}
+
+input, select {
+  width:100%;
+  border:none;
+  outline:none;
+  background:none;
+  color:white;
+}
+
+/* ================= ICON ================= */
+.input i {
+  color:#FFD700;
+  margin-right:10px;
+}
+
+/* ================= BUTTON ================= */
+button {
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:#FFD700;
+  font-weight:bold;
+  cursor:pointer;
+  margin-top:10px;
+  transition:0.3s;
+}
+
+button:hover {
+  transform:scale(1.05);
+}
+
+/* ================= LINK ================= */
+a {
+  color:#FFD700;
+  cursor:pointer;
+}
+
+.small {
+  margin-top:12px;
+  font-size:13px;
+  opacity:0.8;
+}
+
+/* ================= LOADER ================= */
+.loader {
+  margin:10px auto;
+  border:3px solid rgba(255,255,255,0.2);
+  border-top:3px solid #FFD700;
+  border-radius:50%;
+  width:25px;
+  height:25px;
+  animation:spin 1s linear infinite;
+  display:none;
+}
+
+@keyframes spin {
+  100%{transform:rotate(360deg);}
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+  <h2>🚲 Create Account</h2>
+  <p>Join Smart Bike Pooling System</p>
+
+  <div class="input">
+    <i class="fas fa-user"></i>
+    <input id="name" placeholder="Full Name">
+  </div>
+
+  <div class="input">
+    <i class="fas fa-envelope"></i>
+    <input id="email" placeholder="Email">
+  </div>
+
+  <div class="input">
+    <i class="fas fa-phone"></i>
+    <input id="phone" placeholder="Phone">
+  </div>
+
+  <div class="input">
+    <i class="fas fa-lock"></i>
+    <input id="password" type="password" placeholder="Password">
+  </div>
+
+  <div class="input">
+    <i class="fas fa-motorcycle"></i>
+    <select id="hasBike">
+      <option value="1">I have a bike 🚲</option>
+      <option value="0">I need a ride 🧍</option>
+    </select>
+  </div>
+
+  <button onclick="register()">Create Account</button>
+
+  <div class="loader" id="loader"></div>
+
+  <div class="small">
+    Already have account? <a onclick="goLogin()">Login</a>
+  </div>
+
+</div>
+
+<script>
+
+/* ================= REGISTER ================= */
+function register(){
+
+  let loader = document.getElementById("loader");
+  loader.style.display = "block";
+
+  let data = {
+    name: document.getElementById("name").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
+    password: document.getElementById("password").value.trim(),
+    has_bike: document.getElementById("hasBike").value === "1"
+  };
+
+  if(!data.name || !data.email || !data.password){
+    alert("Fill required fields");
+    loader.style.display = "none";
+    return;
+  }
+
+  fetch("http://127.0.0.1:5000/auth/register", {   // ✅ FIXED ROUTE
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(res => {
+
+    loader.style.display = "none";
+
+    alert(res.message);
+
+    if(res.message.includes("success")){
+      window.location.href = "login.html";
+    }
+
+  })
+  .catch(() => {
+    loader.style.display = "none";
+    alert("Server error");
+  });
+
+}
+
+/* ================= NAV ================= */
+function goLogin(){
+  window.location.href = "login.html";
+}
+
+</script>
+
+</body>
+</html>

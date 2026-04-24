@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Admin Dashboard</title>
+
+<link rel="stylesheet" href="css/styles.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body class="light fade">
+
+<div class="bg-gradient"></div>
+
+<header class="navbar glass">
+  <div class="logo">📊 Admin Panel</div>
+
+  <div class="nav-actions">
+    <button class="icon-btn" onclick="toggleTheme()">🌙</button>
+  </div>
+</header>
+
+<!-- 🔥 STATS -->
+<div style="display:grid; grid-template-columns:1fr 1fr;">
+
+  <div class="card">
+    <h2 id="usersCount">0</h2>
+    <p>Total Users</p>
+  </div>
+
+  <div class="card">
+    <h2 id="ridesCount">0</h2>
+    <p>Total Rides</p>
+  </div>
+
+  <div class="card">
+    <h2 id="matchesCount">0</h2>
+    <p>Total Matches</p>
+  </div>
+
+  <div class="card">
+    <h2 id="revenue">₹0</h2>
+    <p>Total Revenue</p>
+  </div>
+
+</div>
+
+<!-- 📊 CHART -->
+<canvas id="chart" style="margin:20px;"></canvas>
+
+<script>
+
+const API = "http://127.0.0.1:5000";
+
+/* 🌙 THEME */
+function toggleTheme(){
+  document.body.classList.toggle("dark");
+}
+
+/* 🚀 LOAD STATS */
+async function loadStats(){
+
+  try{
+
+    let res = await fetch(`${API}/admin_stats`);
+    let data = await res.json();
+
+    document.getElementById("usersCount").innerText = data.users;
+    document.getElementById("ridesCount").innerText = data.rides;
+    document.getElementById("matchesCount").innerText = data.matches;
+    document.getElementById("revenue").innerText = "₹" + data.revenue;
+
+    renderChart(data);
+
+  } catch {
+    console.log("Error loading stats");
+  }
+}
+
+loadStats();
+
+</script>
+
+</body>
+</html>

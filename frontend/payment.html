@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Payment - BikePool</title>
+
+<link rel="stylesheet" href="css/styles.css">
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+.payment-success {
+  color: #00ffae;
+  font-weight: bold;
+  animation: pop 0.5s ease;
+}
+
+.payment-fail {
+  color: #ff4d4d;
+  font-weight: bold;
+}
+
+@keyframes pop {
+  from {transform: scale(0.8); opacity: 0;}
+  to {transform: scale(1); opacity: 1;}
+}
+</style>
+
+</head>
+
+<body class="fade">
+
+<div class="bg-gradient"></div>
+
+<header class="navbar glass">
+  <div class="logo">💳 Secure Payment</div>
+</header>
+
+<div class="auth-container">
+
+  <div class="auth-card glass animate-pop">
+
+    <h2 class="gradient-text">Ride Payment 🚀</h2>
+
+    <div class="ride-card">
+      <p>📍 Distance: <strong><span id="distance">--</span> km</strong></p>
+      <p>💰 Fare: <strong>₹<span id="fare">--</span></strong></p>
+    </div>
+
+    <button id="payBtn" class="primary-btn ripple" onclick="payNow()">
+      💳 Pay Now
+    </button>
+
+    <div id="loader" class="loader hidden"></div>
+
+    <div id="paymentStatus" style="margin-top:15px;"></div>
+
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script src="js/app.js"></script>
+
+<script>
+
+const API = "http://127.0.0.1:5000";
+
+/* ==============================
+   🔐 AUTH CHECK
+============================== */
+if (!localStorage.getItem("token")) {
+  window.location.href = "login.html";
+}
+
+/* ==============================
+   LOAD DATA
+============================== */
+window.onload = function(){
+
+  let dist = parseFloat(localStorage.getItem("distance")) || 2;
+  let fare = parseFloat(localStorage.getItem("fare")) || (dist * 10);
+
+  document.getElementById("distance").innerText = dist.toFixed(2);
+  document.getElementById("fare").innerText = fare.toFixed(2);
+};
+
+
+/* ==============================
+   💳 REAL PAYMENT
+============================== */
+function payNow(){
+
+  let loader = document.getElementById("loader");
+  let btn = document.getElementById("payBtn");
+
+  let amount = document.getElementById("fare").innerText;
+
+  loader.classList.remove("hidden");
+  btn.disabled = true;
+
+  fetch(`${API}/pay`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": localStorage.getItem("token")
+    },
+    body: JSON.stringify({ amount })
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    loader.classList.add("hidden");
+
+    if(data.status === "success"){
+
+      document.getElementById("paymentStatus").innerHTML =
+        `<div class="payment-success">✅ Payment Successful</div>`;
+
+      showToast("🎉 Ride Confirmed!");
+
+      // optional: clear ride state
+      localStorage.removeItem("ride_status");
+
+      setTimeout(()=>{
+        window.location.href = "dashboard.html";
+      }, 2000);
+
+    } else {
+
+      document.getElementById("paymentStatus").innerHTML =
+        `<div class="payment-fail">❌ Payment Failed</div>`;
+
+      btn.disabled = false;
+    }
+
+  })
+  .catch(() => {
+
+    loader.classList.add("hidden");
+
+    document.getElementById("paymentStatus").innerHTML =
+      `<div class="payment-fail">⚠️ Server Error</div>`;
+
+    btn.disabled = false;
+  });
+}
+
+</script>
+
+</body>
+</html>
