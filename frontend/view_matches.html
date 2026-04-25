@@ -104,7 +104,7 @@ async function joinRide(rideId){
       method:"POST",
       headers:{
         "Content-Type":"application/json",
-        "Authorization":token
+        "Authorization": "Bearer " + token
       },
       body: JSON.stringify({ ride_id: rideId })
     });
@@ -135,7 +135,7 @@ async function loadMatchesUI() {
 
     let res = await fetch(API + "/my_matches", {
       headers: {
-        Authorization: localStorage.getItem("token"),
+        Authorization: "Bearer " + localStorage.getItem("token")
       },
     });
 
@@ -189,7 +189,6 @@ async function loadMatchesUI() {
   }
 }
 
-
 /* ==============================
    🤖 AUTO MATCH (BACKEND LINK)
 ============================== */
@@ -205,16 +204,17 @@ async function autoMatch(){
     let res = await fetch(`${API}/auto_match`, {
       method: "POST",
       headers: {
-        "Content-Type":"application/json"
+        "Content-Type":"application/json",
+        "Authorization": "Bearer " + token
       },
       body: JSON.stringify({ user_id: user.id })
     });
 
     let data = await res.json();
 
-    if(data.message === "🎉 Pool Created"){
+    if(data.status === "matched"){
       showToast("🎉 Auto Match Found!");
-
+      
       setTimeout(()=>{
         window.location="active_ride.html";
       },1200);

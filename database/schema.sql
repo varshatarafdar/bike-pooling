@@ -11,7 +11,9 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     phone VARCHAR(15),
     has_bike BOOLEAN DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- =====================================
@@ -24,10 +26,10 @@ CREATE TABLE rides (
     start_location VARCHAR(255) NOT NULL,
     destination VARCHAR(255) NOT NULL,
 
-    start_lat DOUBLE,
-    start_lng DOUBLE,
-    dest_lat DOUBLE,
-    dest_lng DOUBLE,
+    start_lat DOUBLE NOT NULL,
+    start_lng DOUBLE NOT NULL,
+    dest_lat DOUBLE NOT NULL,
+    dest_lng DOUBLE NOT NULL,
 
     ride_time DATETIME NOT NULL,
 
@@ -42,15 +44,20 @@ CREATE TABLE rides (
     ) DEFAULT 'searching',
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_location (start_lat, start_lng, dest_lat, dest_lng),
+    INDEX idx_time (ride_time),
 
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- =====================================
--- RIDE REQUESTS TABLE
+-- RIDE REQUESTS TABLE (MANUAL MATCHING)
 -- =====================================
 CREATE TABLE ride_requests (
     request_id INT AUTO_INCREMENT PRIMARY KEY,
+
     user_id INT NOT NULL,
     ride_id INT NOT NULL,
 
@@ -77,12 +84,14 @@ CREATE TABLE bookings (
     status ENUM(
         'matched',
         'accepted',
-        'ongoing',
+        'arriving',
+        'started',
         'completed',
         'cancelled'
     ) DEFAULT 'matched',
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     FOREIGN KEY (driver_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (passenger_id) REFERENCES users(id) ON DELETE CASCADE,

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>BikePool Dashboard X</title>
+<title>BikePool Dashboard</title>
 
 <link rel="stylesheet" href="css/styles.css">
 
@@ -16,7 +17,7 @@
 
 <style>
 
-/* ================= BACKGROUND ================= */
+/* 🔥 BACKGROUND */
 body {
   margin:0;
   font-family:Poppins;
@@ -32,45 +33,22 @@ body {
   100%{background-position:0% 50%;}
 }
 
-/* ================= NAVBAR ================= */
-.navbar {
-  display:flex;
-  justify-content:space-between;
-  padding:15px;
-  background:rgba(255,255,255,0.08);
-  backdrop-filter:blur(12px);
-  border-radius:0 0 20px 20px;
-}
-
-/* ================= MAP ================= */
+/* 🌍 MAP */
 .map-container {
   height:60vh;
   margin:15px;
   border-radius:20px;
   overflow:hidden;
   box-shadow:0 0 30px rgba(255,215,0,0.2);
-  animation: fadeIn 1s ease;
 }
 
-#map {
-  height:100%;
-  width:100%;
-}
-
-@keyframes fadeIn {
-  from{opacity:0; transform:scale(0.95);}
-  to{opacity:1; transform:scale(1);}
-}
-
-/* ================= STATUS ================= */
+/* 📍 STATUS */
 .status {
-  margin:10px auto;
   text-align:center;
+  margin:10px;
   padding:10px;
-  width:90%;
-  border-radius:12px;
-  background:rgba(255,255,255,0.08);
-  backdrop-filter:blur(10px);
+  border-radius:10px;
+  background:rgba(255,255,255,0.1);
   animation:pulse 2s infinite;
 }
 
@@ -80,14 +58,14 @@ body {
   100%{box-shadow:0 0 5px #FFD700;}
 }
 
-/* ================= BOTTOM PANEL ================= */
+/* 🔥 PANEL */
 .bottom-sheet {
   margin:15px;
   padding:20px;
   border-radius:20px;
   background:rgba(255,255,255,0.08);
   backdrop-filter:blur(15px);
-  animation: slideUp 0.8s ease;
+  animation:slideUp 0.6s ease;
 }
 
 @keyframes slideUp {
@@ -95,29 +73,31 @@ body {
   to{transform:translateY(0);opacity:1;}
 }
 
-/* ================= INPUT ================= */
+/* INPUT */
 .input-group {
   display:flex;
   align-items:center;
-  background:rgba(255,255,255,0.1);
-  margin:10px 0;
   padding:10px;
+  margin:10px 0;
   border-radius:10px;
+  background:rgba(255,255,255,0.1);
 }
 
-input {
-  width:100%;
+.input-group input {
   border:none;
   background:none;
   color:white;
+  width:100%;
   outline:none;
 }
 
-/* ================= BUTTONS ================= */
-button {
+/* BUTTON */
+.primary-btn, .secondary-btn {
+  width:100%;
   padding:12px;
   border:none;
-  border-radius:12px;
+  border-radius:10px;
+  margin-top:10px;
   font-weight:bold;
   cursor:pointer;
   transition:0.3s;
@@ -129,7 +109,7 @@ button {
 
 .primary-btn:hover {
   transform:scale(1.05);
-  box-shadow:0 0 20px #FFD700;
+  box-shadow:0 0 15px #FFD700;
 }
 
 .secondary-btn {
@@ -137,15 +117,10 @@ button {
   color:white;
 }
 
-.secondary-btn:hover {
-  transform:scale(1.05);
-}
-
-/* ================= DROPDOWN ================= */
+/* DROPDOWN */
 .dropdown {
   background:#111;
   border-radius:10px;
-  margin-top:5px;
   max-height:150px;
   overflow:auto;
 }
@@ -159,44 +134,86 @@ button {
   background:#222;
 }
 
-/* ================= TOAST ================= */
+/* TOAST (IMPROVED) */
 #toast {
   position:fixed;
   bottom:20px;
   left:50%;
   transform:translateX(-50%);
-  background:black;
-  padding:10px 20px;
+  background:rgba(0,0,0,0.9);
+  padding:12px 20px;
   border-radius:10px;
+  display:none;
+  animation:fadeIn 0.3s ease;
+  z-index:9999;
+}
+
+@keyframes fadeIn {
+  from{opacity:0; transform:translate(-50%,20px);}
+  to{opacity:1; transform:translate(-50%,0);}
+}
+.matches-panel{
+  margin:15px;
+  padding:15px;
+  border-radius:20px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(12px);
   display:none;
 }
 
+.match-card{
+  background:rgba(255,255,255,0.1);
+  padding:12px;
+  margin:10px 0;
+  border-radius:12px;
+  animation:fadeIn 0.5s ease;
+}
+
+.badge{
+  padding:3px 8px;
+  border-radius:6px;
+  font-size:12px;
+  background:#FFD700;
+  color:black;
+}
+
+/* 🎉 POPUP */
+.popup{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(0);
+  background:#111;
+  padding:20px;
+  border-radius:20px;
+  text-align:center;
+  z-index:9999;
+  transition:0.3s;
+}
+
+.popup.show{
+  transform:translate(-50%,-50%) scale(1);
+}
 </style>
 
 </head>
 
 <body>
 
-<!-- ================= NAV ================= -->
-<header class="navbar">
-  <div>🚲 BikePool</div>
+<!-- ✅ NAVBAR -->
+<div id="navbar"></div>
 
-  <div>
-    <i class="fas fa-moon"></i>
-  </div>
-</header>
-
-<!-- ================= MAP ================= -->
+<!-- 🌍 MAP -->
 <div class="map-container">
-  <div id="map"></div>
+  <div id="map" style="height:100%"></div>
 </div>
 
-<!-- ================= STATUS ================= -->
+<!-- 📍 STATUS -->
 <div id="statusBox" class="status">
-  📍 Tap map or search location
+  📍 Select Pickup & Destination
 </div>
 
-<!-- ================= PANEL ================= -->
+<!-- 🔥 PANEL -->
 <div class="bottom-sheet">
 
   <h3>🚀 Plan Your Ride</h3>
@@ -222,57 +239,249 @@ button {
     🚀 Book Ride
   </button>
 
-  <button class="secondary-btn" onclick="goTo('view_matches.html')">
+  <button class="secondary-btn" onclick="loadMatches()">
     🔍 Live Matches
   </button>
 
 </div>
+<!-- 🔥 MATCH RESULTS -->
+<div id="matchesPanel" class="matches-panel">
+  <h3>🚲 Nearby Riders</h3>
+  <div id="matchesContainer"></div>
+</div>
 
+<!-- 🎉 POPUP -->
+<div id="popup" class="popup">
+  <h2>🎉 Ride Booked!</h2>
+  <p>Finding best match...</p>
+</div>
 <div id="toast"></div>
 
 <script src="js/app.js"></script>
 
 <script>
+/* AUTH */
+if(!localStorage.getItem("token")){
+  window.location.href="login.html";
+}
 
-/* ================= MAP ================= */
+/* MAP */
 let map = L.map('map').setView([18.52,73.85], 13);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+.addTo(map);
 
-let pickupMarker, dropMarker;
+let pickupMarker = null;
+let dropMarker = null;
 
-/* ================= CLICK ================= */
-map.on('click', e => {
+/* CLICK */
+map.on('click', async e => {
 
   let {lat,lng} = e.latlng;
 
+  let res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+  let data = await res.json();
+
+  let address = data.display_name;
+
   if(!pickupMarker){
     pickupMarker = L.marker([lat,lng]).addTo(map);
+    document.getElementById("start").value = address;
     localStorage.setItem("start_lat", lat);
     localStorage.setItem("start_lng", lng);
-    showToast("Pickup selected");
   } else {
     dropMarker = L.marker([lat,lng]).addTo(map);
+    document.getElementById("destination").value = address;
     localStorage.setItem("dest_lat", lat);
     localStorage.setItem("dest_lng", lng);
-    showToast("Destination selected");
   }
 
 });
 
-/* ================= BOOK ================= */
-function handleBooking(){
+/* BOOK RIDE */
+async function handleBooking(){
 
-  document.getElementById("statusBox").innerText = "🔍 Finding riders...";
+  let start = document.getElementById("start").value.trim();
+  let dest = document.getElementById("destination").value.trim();
+  let time = document.getElementById("time").value;
 
-  addRide();
+  let start_lat = parseFloat(localStorage.getItem("start_lat"));
+  let start_lng = parseFloat(localStorage.getItem("start_lng"));
+  let dest_lat = parseFloat(localStorage.getItem("dest_lat"));
+  let dest_lng = parseFloat(localStorage.getItem("dest_lng"));
 
-  setTimeout(()=> {
-    showToast("Searching system...");
-  },500);
+  if(!start || !dest || !time){
+    showToast("⚠️ Fill all fields");
+    return;
+  }
 
+  if(isNaN(start_lat) || isNaN(dest_lat)){
+    showToast("📍 Select pickup & destination on map");
+    return;
+  }
+
+  try{
+
+    let data = await createRideAPI({
+      start: start,
+      destination: dest,
+      start_lat: start_lat,
+      start_lng: start_lng,
+      dest_lat: dest_lat,
+      dest_lng: dest_lng,
+      time: time
+    });
+
+    if(data){
+
+      localStorage.setItem("ride_id", data.ride_id);
+
+      showPopup();
+      showToast("🎉 Ride Booked Successfully");
+
+      // stay on dashboard (as you want)
+      // but still check for auto match
+      autoMatch();
+    }
+
+  }catch(err){
+    console.error(err);
+    showToast("Server error ❌");
+  }
+}
+/* 🎉 POPUP */
+function showPopup(){
+  let popup = document.getElementById("popup");
+  popup.classList.add("show");
+
+  setTimeout(()=>{
+    popup.classList.remove("show");
+  },2000);
 }
 
+/* 🔍 LOAD MATCHES */
+async function loadMatches(){
+
+  let panel = document.getElementById("matchesPanel");
+  let container = document.getElementById("matchesContainer");
+
+  panel.style.display="block";
+  container.innerHTML="🔄 Searching nearby riders...";
+
+  try{
+
+    let data = await getMatchesAPI();
+
+    container.innerHTML="";
+
+    if(!data || !data.matches || data.matches.length===0){
+      container.innerHTML="❌ No matches found";
+      return;
+    }
+
+    data.matches.forEach(m=>{
+
+      let div = document.createElement("div");
+      div.className="match-card";
+
+      div.innerHTML = `
+        <h4>
+          ${m.name}
+          ${m.has_bike ? '<span class="badge">🚗 Driver</span>' : '<span class="badge">🧍 Rider</span>'}
+        </h4>
+        <p>📍 ${m.start_location} → ${m.destination}</p>
+        <p>📏 Pickup Distance: ${m.pickup_distance.toFixed(2)} km</p>
+        <p>📏 Drop Distance: ${m.drop_distance.toFixed(2)} km</p>
+        <p>⏱ ${m.ride_time}</p>
+
+        <button onclick="requestRide(${m.user_id}, ${m.id})"
+          class="primary-btn">
+          🤝 Request Pool
+        </button>
+      `;
+
+      container.appendChild(div);
+    });
+
+  }catch(err){
+    console.error(err);
+    container.innerHTML="❌ Error loading matches";
+  }
+}
+// 🔥 AUTO MATCH (POLLING)
+function autoMatch(){
+
+  let interval = setInterval(async () => {
+
+    try{
+
+      let data = await checkMatchAPI();
+
+      if(data && data.match_found){
+
+        clearInterval(interval);
+
+        showToast("🎉 Match Found!");
+
+        setTimeout(()=>{
+          window.location.href = "active_ride.html";
+        },1200);
+      }
+
+    }catch{
+      console.log("match error");
+    }
+
+  }, 3000);
+}
+
+async function requestRide(userId, rideId){
+
+  try{
+
+    let res = await createBookingAPI({
+      driver_id: userId,
+      ride_id: rideId
+    });
+
+    if(res){
+      showToast("🎉 Ride Requested!");
+    }
+
+  }catch{
+    showToast("Error requesting ride");
+  }
+}
+function showToast(msg){
+  let t = document.getElementById("toast");
+  t.innerText = msg;
+  t.style.display = "block";
+
+  setTimeout(()=>{
+    t.style.display = "none";
+  },2500);
+}
+function resetMapSelection(){
+  if(pickupMarker){
+    map.removeLayer(pickupMarker);
+    pickupMarker = null;
+  }
+  if(dropMarker){
+    map.removeLayer(dropMarker);
+    dropMarker = null;
+  }
+
+  localStorage.removeItem("start_lat");
+  localStorage.removeItem("start_lng");
+  localStorage.removeItem("dest_lat");
+  localStorage.removeItem("dest_lng");
+
+  document.getElementById("start").value = "";
+  document.getElementById("destination").value = "";
+
+  document.getElementById("statusBox").innerText =
+    "📍 Select Pickup & Destination";
+}
 </script>
 
 </body>

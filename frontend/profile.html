@@ -1,449 +1,329 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Profile - BikePool</title>
-
-<link rel="stylesheet" href="css/styles.css">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
 <style>
-.profile-img {
-  width: 90px;
-  border-radius: 50%;
-  margin-bottom: 10px;
-  border: 3px solid #00ffcc;
-}
-
-.edit-input {
-  display: none;
-  margin-top: 10px;
-}
-
-/* ===============================
-   🌈 GLOBAL STYLES
-=============================== */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Poppins', sans-serif;
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Poppins',sans-serif;
 }
 
 body {
-  background: #0f0f0f;
-  color: white;
-  overflow-x: hidden;
+  background:#0f0f0f;
+  color:white;
 }
 
-/* 🌗 DARK MODE */
-body.dark {
-  background: #000;
-  color: #eee;
-}
-
-/* ===============================
-   🌈 BACKGROUND GRADIENT
-=============================== */
+/* 🌈 Animated background */
 .bg-gradient {
-  position: fixed;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(270deg, #00ffcc, #00ccff, #ff00cc, #ffcc00);
-  background-size: 800% 800%;
-  animation: gradientMove 15s ease infinite;
-  z-index: -1;
-  opacity: 0.15;
+  position:fixed;
+  width:200%;
+  height:200%;
+  background:linear-gradient(270deg,#00ffcc,#00ccff,#ff00cc,#ffcc00);
+  background-size:800% 800%;
+  animation:gradientMove 15s ease infinite;
+  z-index:-1;
+  opacity:0.15;
 }
 
 @keyframes gradientMove {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
 }
 
-/* ===============================
-   🧊 GLASS EFFECT
-=============================== */
+/* Glass UI */
 .glass {
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(15px);
-  border-radius: 16px;
-  box-shadow: 0 4px 30px rgba(0,0,0,0.2);
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(15px);
+  border-radius:16px;
+  padding:20px;
 }
 
-/* ===============================
-   🧭 NAVBAR
-=============================== */
+/* Navbar */
 .navbar {
-  display: flex;
-  justify-content: space-between;
-  padding: 15px 20px;
-  margin: 10px;
-}
-
-.logo {
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.nav-actions {
-  display: flex;
-  gap: 10px;
-}
-
-/* ===============================
-   🔘 BUTTONS
-=============================== */
-.primary-btn {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(45deg,#00ffcc,#00ccff);
-  color: black;
-  font-weight: bold;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.primary-btn:hover {
-  transform: scale(1.05);
-}
-
-.secondary-btn {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: 2px solid #00ffcc;
-  background: transparent;
-  color: #00ffcc;
-  cursor: pointer;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px 20px;
+  margin:10px;
 }
 
 .icon-btn {
-  padding: 10px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255,255,255,0.1);
-  cursor: pointer;
+  padding:10px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.1);
+  border:none;
+  cursor:pointer;
+  color:white;
 }
 
-/* ===============================
-   🧾 INPUTS
-=============================== */
+/* Layout */
+.container {
+  display:flex;
+  justify-content:center;
+  margin-top:30px;
+}
+
+.card {
+  width:90%;
+  max-width:420px;
+  text-align:center;
+}
+
+/* Profile image */
+.profile-img {
+  width:90px;
+  border-radius:50%;
+  border:3px solid #00ffcc;
+  margin-bottom:10px;
+}
+
+/* Input fields */
 .input-group {
-  display: flex;
-  align-items: center;
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.1);
+  display:flex;
+  align-items:center;
+  margin:12px 0;
+  padding:12px;
+  background:rgba(255,255,255,0.1);
+  border-radius:10px;
 }
 
-.input-group input,
-.input-group select {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: white;
-  margin-left: 10px;
+.input-group i {
+  margin-right:10px;
+  color:#00ffcc;
 }
 
-/* ===============================
-   📦 BOTTOM SHEET
-=============================== */
-.bottom-sheet {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  padding: 20px;
-  border-radius: 20px 20px 0 0;
+.input-group input {
+  flex:1;
+  background:none;
+  border:none;
+  outline:none;
+  color:white;
 }
 
-/* ===============================
-   📍 DROPDOWN
-=============================== */
-.dropdown {
-  background: #111;
-  border-radius: 10px;
-  max-height: 150px;
-  overflow-y: auto;
+/* Disabled style */
+.input-group input:disabled {
+  opacity:0.6;
 }
 
-.dropdown-item {
-  padding: 10px;
-  cursor: pointer;
+/* Buttons */
+.primary-btn, .secondary-btn {
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  margin-top:10px;
+  cursor:pointer;
+  font-weight:600;
 }
 
-.dropdown-item:hover {
-  background: #222;
+.primary-btn {
+  background:linear-gradient(45deg,#00ffcc,#00ccff);
 }
 
-/* ===============================
-   🔄 LOADER
-=============================== */
+.secondary-btn {
+  background:#222;
+  color:white;
+  border:1px solid #333;
+}
+
+/* Toast */
+#toast {
+  position:fixed;
+  bottom:60px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#111;
+  padding:10px 20px;
+  border-radius:20px;
+  display:none;
+}
+
+/* Loader */
 .loader {
-  margin: 15px auto;
-  border: 4px solid #ccc;
-  border-top: 4px solid #00ffcc;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  animation: spin 1s linear infinite;
+  border:4px solid #333;
+  border-top:4px solid #00ffcc;
+  border-radius:50%;
+  width:30px;
+  height:30px;
+  animation:spin 1s linear infinite;
+  margin:15px auto;
 }
 
-.hidden {
-  display: none;
-}
+.hidden {display:none;}
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ===============================
-   🔔 TOAST
-=============================== */
-#toast {
-  position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #111;
-  padding: 10px 20px;
-  border-radius: 20px;
-  display: none;
-}
-
-/* ===============================
-   ✨ ANIMATIONS
-=============================== */
-.fade {
-  animation: fadeIn 0.8s ease;
-}
-
-@keyframes fadeIn {
-  from {opacity:0; transform:translateY(20px);}
-  to {opacity:1; transform:translateY(0);}
-}
-
-.animate-pop {
-  animation: pop 0.5s ease;
-}
-
-@keyframes pop {
-  0% {transform:scale(0.8); opacity:0;}
-  100% {transform:scale(1); opacity:1;}
-}
-
-/* ===============================
-   📊 ADMIN CARDS
-=============================== */
-.card {
-  padding: 20px;
-  margin: 10px;
-  border-radius: 15px;
-  background: rgba(255,255,255,0.08);
-  text-align: center;
-}
-
-.card h2 {
-  font-size: 28px;
-}
-
-.card p {
-  opacity: 0.7;
+  to {transform:rotate(360deg);}
 }
 </style>
-
 </head>
 
-<body class="fade">
+<body>
 
 <div class="bg-gradient"></div>
 
-<header class="navbar glass">
-  <div class="logo">👤 Profile</div>
+<!-- Navbar -->
+<div class="navbar glass">
+  <div>👤 Profile</div>
+  <button class="icon-btn" onclick="go('dashboard.html')">
+    <i class="fas fa-home"></i>
+  </button>
+</div>
 
-  <div class="nav-actions">
-    <button class="icon-btn ripple" onclick="goTo('dashboard.html')">
-      <i class="fas fa-home"></i>
-    </button>
-  </div>
-</header>
+<!-- Profile Card -->
+<div class="container">
+  <div class="card glass">
 
-<div class="auth-container">
-
-  <div class="auth-card glass animate-pop">
-
-    <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
-         class="profile-img">
+    <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="profile-img">
 
     <h3 id="username">Loading...</h3>
-    <p id="email">--</p>
 
-    <!-- EDIT FIELD -->
-    <div class="input-group edit-input" id="editBox">
+    <!-- Inputs -->
+    <div class="input-group">
       <i class="fas fa-user"></i>
-      <input id="newName" placeholder="Enter new name">
+      <input id="name" disabled>
     </div>
 
-    <hr>
+    <div class="input-group">
+      <i class="fas fa-envelope"></i>
+      <input id="email" disabled>
+    </div>
 
-    <!-- BIKE MODE -->
+    <div class="input-group">
+      <i class="fas fa-phone"></i>
+      <input id="phone" disabled>
+    </div>
+
     <div class="input-group">
       <i class="fas fa-motorcycle"></i>
-      <label style="flex:1;">Driver Mode</label>
-      <input type="checkbox" id="bikeToggle">
+      <label style="flex:1;text-align:left;">Has Bike</label>
+      <input type="checkbox" id="has_bike" disabled>
     </div>
 
-    <!-- ACTION BUTTONS -->
-    <div class="btn-group">
-
-      <button class="primary-btn ripple" onclick="toggleEdit()">
-        ✏️ Edit
-      </button>
-
-      <button class="secondary-btn ripple" onclick="logout()">
-        🚪 Logout
-      </button>
-
-    </div>
+    <!-- Buttons -->
+    <button class="secondary-btn" onclick="enableEdit()">✏️ Edit Profile</button>
+    <button class="primary-btn" onclick="updateProfile()">💾 Save Changes</button>
 
     <div id="loader" class="loader hidden"></div>
 
   </div>
-
 </div>
 
 <div id="toast"></div>
 
-<script src="js/app.js"></script>
-
 <script>
 
-const API = "http://127.0.0.1:5000";
+const API = "http://127.0.0.1:5000/api";
+const token = localStorage.getItem("token");
 
-/* ==============================
-   🔐 AUTH CHECK
-============================== */
-if (!localStorage.getItem("token")) {
+if(!token){
   window.location.href = "login.html";
 }
 
-/* ==============================
-   LOAD PROFILE
-============================== */
+/* 📥 Load Profile */
 async function loadProfile(){
+  loader(true);
 
-  let loader = document.getElementById("loader");
-  loader.classList.remove("hidden");
-
-  try {
-    let res = await fetch(`${API}/profile`, {
-      headers: { "Authorization": localStorage.getItem("token") }
+  try{
+    let res = await fetch(`${API}/profile`,{
+      headers:{
+        "Authorization":"Bearer " + token
+      }
     });
 
     let data = await res.json();
 
-    document.getElementById("username").innerText = data.name || "User";
-    document.getElementById("email").innerText = data.email || "--";
-    document.getElementById("bikeToggle").checked = data.has_bike;
+    document.getElementById("username").innerText = data.name;
+    document.getElementById("name").value = data.name;
+    document.getElementById("email").value = data.email;
+    document.getElementById("phone").value = data.phone;
+    document.getElementById("has_bike").checked = data.has_bike;
 
-  } catch {
-    showToast("⚠️ Failed to load profile");
+  }catch(err){
+    toast("⚠️ Failed to load profile");
   }
 
-  loader.classList.add("hidden");
+  loader(false);
 }
 
-/* ==============================
-   🚲 UPDATE BIKE MODE
-============================== */
-document.getElementById("bikeToggle").addEventListener("change", async function(){
-
-  await fetch(`${API}/update_bike`, {
-    method: "POST",
-    headers: {
-      "Content-Type":"application/json",
-      "Authorization": localStorage.getItem("token")
-    },
-    body: JSON.stringify({ has_bike: this.checked ? 1 : 0 })
+/* ✏️ Enable Editing */
+function enableEdit(){
+  document.querySelectorAll("input").forEach(i=>{
+    i.disabled = false;
   });
-
-  showToast("🚲 Mode Updated");
-});
-
-/* ==============================
-   ✏️ EDIT TOGGLE
-============================== */
-function toggleEdit(){
-
-  let box = document.getElementById("editBox");
-
-  if(box.style.display === "block"){
-    updateProfile();
-  } else {
-    box.style.display = "block";
-  }
+  toast("✏️ Edit mode enabled");
 }
 
-/* ==============================
-   💾 UPDATE PROFILE
-============================== */
+/* 💾 Update Profile */
 async function updateProfile(){
 
-  let name = document.getElementById("newName").value.trim();
+  loader(true);
 
-  if(!name){
-    showToast("⚠️ Enter name");
-    return;
+  let body = {
+    name: document.getElementById("name").value,
+    email: document.getElementById("email").value,
+    phone: document.getElementById("phone").value,
+    has_bike: document.getElementById("has_bike").checked
+  };
+
+  try{
+    let res = await fetch(`${API}/profile`,{
+      method:"PUT",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer " + token
+      },
+      body: JSON.stringify(body)
+    });
+
+    if(res.ok){
+      toast("✅ Profile Updated");
+
+      // lock again after save
+      document.querySelectorAll("input").forEach(i=>{
+        i.disabled = true;
+      });
+
+      document.getElementById("username").innerText = body.name;
+    } else {
+      toast("❌ Update failed");
+    }
+
+  }catch(err){
+    toast("❌ Server error");
   }
 
-  let loader = document.getElementById("loader");
-  loader.classList.remove("hidden");
-
-  await fetch(`${API}/update_profile`, {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":localStorage.getItem("token")
-    },
-    body: JSON.stringify({ name })
-  });
-
-  loader.classList.add("hidden");
-
-  showToast("✅ Profile Updated");
-
-  document.getElementById("editBox").style.display = "none";
-  document.getElementById("newName").value = "";
-
-  loadProfile();
+  loader(false);
 }
 
-/* ==============================
-   🚪 LOGOUT
-============================== */
-function logout(){
-  localStorage.clear();
-  showToast("Logged out 👋");
-
-  setTimeout(()=>{
-    window.location.href="login.html";
-  }, 1000);
+/* 🍞 Toast */
+function toast(msg){
+  let t=document.getElementById("toast");
+  t.innerText=msg;
+  t.style.display="block";
+  setTimeout(()=>t.style.display="none",2000);
 }
 
-/* ==============================
-   INIT
-============================== */
-document.addEventListener("DOMContentLoaded", loadProfile);
+/* 🔄 Loader */
+function loader(show){
+  document.getElementById("loader").classList.toggle("hidden",!show);
+}
+
+/* 🏠 Navigation */
+function go(page){
+  window.location.href = page;
+}
+
+/* 🚀 Init */
+loadProfile();
 
 </script>
 

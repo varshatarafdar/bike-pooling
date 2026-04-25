@@ -1,0 +1,160 @@
+<header class="navbar glass">
+
+  <div class="logo">🚲 BikePool</div>
+
+  <!-- DESKTOP NAV -->
+  <nav class="nav-links">
+    <a href="dashboard.html">🏠 Dashboard</a>
+    <a href="profile.html">👤 Profile</a>
+    <a href="ride_history.html">📜 History</a>
+    <a href="view_matches.html">🔍 Matches</a>
+    <a href="active_ride.html">🚲 Active Ride</a>
+    <a href="#" onclick="logout()">🚪 Logout</a>
+  </nav>
+
+  <!-- HAMBURGER -->
+  <div class="hamburger" onclick="toggleMenu()">
+    ☰
+  </div>
+
+  <!-- MOBILE MENU -->
+  <div id="mobileMenu" class="mobile-menu">
+    <a href="dashboard.html">🏠 Dashboard</a>
+    <a href="profile.html">👤 Profile</a>
+    <a href="ride_history.html">📜 History</a>
+    <a href="view_matches.html">🔍 Matches</a>
+    <a href="active_ride.html">🚲 Active Ride</a>
+    <a href="#" onclick="logout()">🚪 Logout</a>
+  </div>
+
+</header>
+
+<style>
+
+/* ================= NAVBAR ================= */
+.navbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px 20px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  position:sticky;
+  top:0;
+  z-index:1000;
+}
+
+/* ================= LOGO ================= */
+.logo{
+  font-weight:bold;
+  font-size:18px;
+  color:#FFD700;
+  letter-spacing:1px;
+}
+
+/* ================= DESKTOP NAV ================= */
+.nav-links{
+  display:flex;
+  gap:15px;
+}
+
+.nav-links a{
+  text-decoration:none;
+  color:white;
+  padding:8px 12px;
+  border-radius:10px;
+  transition:0.3s;
+}
+
+.nav-links a:hover{
+  background:rgba(255,215,0,0.2);
+  box-shadow:0 0 10px #FFD700;
+}
+
+/* ================= HAMBURGER ================= */
+.hamburger{
+  display:none;
+  font-size:22px;
+  cursor:pointer;
+}
+
+/* ================= MOBILE MENU ================= */
+.mobile-menu{
+  position:absolute;
+  top:70px;
+  right:15px;
+  width:220px;
+  background:rgba(0,0,0,0.9);
+  backdrop-filter:blur(12px);
+  border-radius:15px;
+  display:none;
+  flex-direction:column;
+  animation:slideDown 0.3s ease;
+  overflow:hidden;
+}
+
+.mobile-menu a{
+  padding:12px;
+  color:white;
+  text-decoration:none;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+.mobile-menu a:hover{
+  background:#222;
+}
+
+/* ================= ANIMATION ================= */
+@keyframes slideDown{
+  from{opacity:0; transform:translateY(-10px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+/* ================= RESPONSIVE ================= */
+@media(max-width:768px){
+
+  .nav-links{
+    display:none;
+  }
+
+  .hamburger{
+    display:block;
+  }
+
+}
+
+</style>
+
+<script>
+
+/* ================= TOGGLE MENU ================= */
+function toggleMenu(){
+  let menu = document.getElementById("mobileMenu");
+
+  if(menu.style.display === "flex"){
+    menu.style.display = "none";
+  }else{
+    menu.style.display = "flex";
+  }
+}
+
+/* ================= CLOSE MENU ON CLICK ================= */
+document.addEventListener("click", function(e){
+
+  let menu = document.getElementById("mobileMenu");
+  let hamburger = document.querySelector(".hamburger");
+
+  if(!menu.contains(e.target) && !hamburger.contains(e.target)){
+    menu.style.display = "none";
+  }
+
+});
+
+/* ================= LOGOUT ================= */
+function logout(){
+  localStorage.clear();
+  window.location.href = "login.html";
+}
+
+</script>

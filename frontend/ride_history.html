@@ -140,7 +140,7 @@ async function loadHistory(){
       card.className = "ride-card glass animate-pop";
 
       card.innerHTML = `
-        <h3>📍 ${ride.start_address} → ${ride.dest_address}</h3>
+        <h3>📍 ${ride.start_location} → ${ride.destination}</h3>
         <p>⏱ ${ride.time}</p>
         <p>💰 ₹${ride.fare || 40}</p>
         <p>📊 Status: <span style="color:#00ffcc">${ride.status}</span></p>

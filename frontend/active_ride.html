@@ -7,286 +7,188 @@
 
 <title>Active Ride - BikePool</title>
 
-<link rel="stylesheet" href="css/styles.css">
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-
 <style>
-
-/* 🌍 MAP */
-#map {
-  height: 100%;
-  width: 100%;
-  border-radius: 20px;
+body{
+  margin:0;
+  font-family:Poppins;
+  background:#0f0f0f;
+  color:white;
 }
 
-.map-container {
-  height: 65vh;
-  margin: 10px;
-  border-radius: 20px;
-  overflow: hidden;
+/* MAP */
+#map{
+  height:60vh;
 }
 
-/* ✨ STATUS TEXT */
-.loading {
-  text-align: center;
-  padding: 20px;
-  font-weight: bold;
-  animation: pulse 1.5s infinite;
+/* CARD */
+.card{
+  margin:15px;
+  padding:15px;
+  border-radius:15px;
+  background:rgba(255,255,255,0.08);
 }
 
-/* 🚀 PROGRESS BAR */
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: rgba(255,255,255,0.2);
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: 10px;
+/* BUTTON */
+button{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
+  background:#FFD700;
+  font-weight:bold;
+  cursor:pointer;
 }
 
-#progressFill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg,#00ffcc,#00ccff);
-  transition: width 0.5s;
+/* STATUS */
+.status{
+  text-align:center;
+  margin:10px;
+  padding:10px;
+  border-radius:10px;
+  background:#222;
 }
-
-/* 🎴 CARD */
-.ride-card {
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.1);
-}
-
-/* 🔥 ANIMATION */
-@keyframes pulse {
-  0% {opacity:0.6;}
-  50% {opacity:1;}
-  100% {opacity:0.6;}
-}
-
 </style>
 
 </head>
+<body>
 
-<body class="light fade">
+<div id="map"></div>
 
-<div class="bg-gradient"></div>
+<div class="status" id="statusBox">🔄 Loading ride...</div>
 
-<header class="navbar glass">
-  <div class="logo">🚲 BikePool</div>
+<div class="card">
+  <h3>👤 Driver</h3>
+  <p id="driver"></p>
 
-  <div class="nav-actions">
-    <button class="icon-btn ripple" onclick="goTo('dashboard.html')">
-      <i class="fas fa-home"></i>
-    </button>
+  <h3>🧍 Passenger</h3>
+  <p id="passenger"></p>
 
-    <button class="icon-btn ripple" onclick="toggleTheme()">
-      <i id="themeIcon" class="fas fa-moon"></i>
-    </button>
-  </div>
-</header>
-
-<!-- 🌍 MAP -->
-<div class="map-container">
-  <div id="map"></div>
+  <h3>📞 Contact</h3>
+  <p id="phone"></p>
 </div>
 
-<!-- 🔥 PANEL -->
-<section class="bottom-sheet glass">
-
-  <h3 id="statusText" class="loading">🔍 Fetching Ride...</h3>
-
-  <div class="ride-card">
-    <p><strong>👨 Driver:</strong> <span id="driverName">--</span></p>
-    <p><strong>🏍 Bike:</strong> <span id="bikeInfo">--</span></p>
-  </div>
-
-  <div class="ride-card">
-    <p><strong>🧍 Passenger:</strong> <span id="passengerName">--</span></p>
-  </div>
-
-  <div class="ride-card">
-    <p><strong>📍 From:</strong> <span id="startLocation">--</span></p>
-    <p><strong>🏁 To:</strong> <span id="endLocation">--</span></p>
-  </div>
-
-  <div class="progress-bar">
-    <div id="progressFill"></div>
-  </div>
-
-  <button onclick="startRide()" class="primary-btn ripple">
-    ▶ Start Ride
-  </button>
-
-</section>
-
-<div id="toast"></div>
-
-<script src="js/app.js"></script>
+<div class="card">
+  <button onclick="updateStatus('accepted')">✅ Accept</button>
+  <button onclick="updateStatus('arriving')">🚗 Arriving</button>
+  <button onclick="updateStatus('started')">▶ Start Ride</button>
+  <button onclick="updateStatus('completed')">🏁 Complete</button>
+</div>
 
 <script>
 
 const API = "http://127.0.0.1:5000";
 
-let map, driverMarker;
-let routePoints = [];
-let currentIndex = 0;
+let map;
+let bookingData;
 
-/* 🔐 AUTH CHECK */
-if (!localStorage.getItem("token")) {
-  window.location.href = "login.html";
+/* INIT */
+document.addEventListener("DOMContentLoaded", async () => {
+  initMap();
+  loadBooking();
+});
+
+/* MAP */
+function initMap(){
+  map = L.map("map").setView([20.59,78.96], 5);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
+  .addTo(map);
 }
 
-/* ==============================
-   🚀 LOAD ACTIVE RIDE
-============================== */
-async function loadActiveRide() {
+/* LOAD ACTIVE BOOKING */
+async function loadBooking(){
 
-  try {
+  try{
 
-    let res = await fetch(`${API}/pool_status/${JSON.parse(localStorage.getItem("user") || "{}").id}`, {
-      headers: {
-        "Authorization": localStorage.getItem("token")
+    let res = await fetch(API + "/pool_status", {
+      headers:{
+        "Authorization":"Bearer " + localStorage.getItem("token")
       }
     });
 
     let data = await res.json();
 
-    if (data.status !== "matched") {
-      document.getElementById("statusText").innerText = "🔍 Waiting for match...";
+    if(!data.booking){
+      document.getElementById("statusBox").innerText = "❌ No Active Ride";
       return;
     }
 
-    let b = data.booking;
+    bookingData = data.booking;
 
-    document.getElementById("statusText").innerText = "🎉 Ride Matched";
+    document.getElementById("driver").innerText =
+      bookingData.driver_name || "N/A";
 
-    document.getElementById("driverName").innerText = b.driver_name;
-    document.getElementById("passengerName").innerText = b.passenger_name;
-    document.getElementById("bikeInfo").innerText = "Available";
+    document.getElementById("passenger").innerText =
+      bookingData.passenger_name || "N/A";
 
-    document.getElementById("startLocation").innerText = "Pickup Selected";
-    document.getElementById("endLocation").innerText = "Destination Selected";
+    document.getElementById("phone").innerText =
+      "Driver ID: " + bookingData.driver_id + " | Passenger ID: " + bookingData.passenger_id;
 
-    buildRoute(b);
+    document.getElementById("statusBox").innerText =
+      "🚦 Status: " + bookingData.status;
 
-    showToast("Ride Ready 🚀");
+    drawRoute();
 
-  } catch (err) {
+  }catch(err){
     console.log(err);
-    showToast("Server Error ❌");
+    document.getElementById("statusBox").innerText = "⚠️ Error loading ride";
   }
 }
 
-/* ==============================
-   📍 BUILD ROUTE
-============================== */
-function buildRoute(b){
+/* DRAW ROUTE */
+function drawRoute(){
 
-  routePoints = [];
+  if(!bookingData) return;
 
-  let startLat = parseFloat(localStorage.getItem("start_lat"));
-  let startLng = parseFloat(localStorage.getItem("start_lng"));
-  let destLat = parseFloat(localStorage.getItem("dest_lat"));
-  let destLng = parseFloat(localStorage.getItem("dest_lng"));
+  let coords = [];
 
-  let steps = 40;
-
-  for(let i=0;i<=steps;i++){
-    let lat = startLat + (destLat - startLat)*(i/steps);
-    let lng = startLng + (destLng - startLng)*(i/steps);
-    routePoints.push([lat,lng]);
+  if(bookingData.start_lat && bookingData.start_lng){
+    coords.push([bookingData.start_lat, bookingData.start_lng]);
   }
 
-  initMap();
+  if(bookingData.dest_lat && bookingData.dest_lng){
+    coords.push([bookingData.dest_lat, bookingData.dest_lng]);
+  }
+
+  if(coords.length < 2) return;
+
+  let polyline = L.polyline(coords).addTo(map);
+
+  map.fitBounds(polyline.getBounds());
 }
 
-/* ==============================
-   🌍 INIT MAP
-============================== */
-function initMap(){
+/* UPDATE STATUS */
+async function updateStatus(status){
 
-  if(map) map.remove();
+  try{
 
-  map = L.map('map').setView(routePoints[0], 14);
+    await fetch(API + "/update_status",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer " + localStorage.getItem("token")
+      },
+      body: JSON.stringify({
+        booking_id: bookingData.id || bookingData.booking_id,
+        status: status
+      })
+    });
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-    .addTo(map);
+    loadBooking();
 
-  driverMarker = L.marker(routePoints[0]).addTo(map)
-    .bindPopup("🚗 Driver");
-
-  L.polyline(routePoints, {
-    color: "#00ffcc",
-    weight: 4
-  }).addTo(map);
+  }catch(err){
+    console.log(err);
+    alert("Failed to update status");
+  }
 }
 
-/* ==============================
-   🚀 START RIDE
-============================== */
-function startRide(){
-
-  let statusText = document.getElementById("statusText");
-  let progressFill = document.getElementById("progressFill");
-
-  let stages = [
-    "🚘 Driver Arriving",
-    "🟢 Ride Started",
-    "📍 On The Way",
-    "🏁 Almost There",
-    "✅ Completed"
-  ];
-
-  let interval = setInterval(() => {
-
-    if(currentIndex >= routePoints.length){
-
-      clearInterval(interval);
-
-      statusText.innerText = "✅ Ride Completed";
-      progressFill.style.width = "100%";
-
-      showToast("🎉 Trip Completed!");
-
-      setTimeout(()=>{
-        window.location.href = "ride_history.html";
-      },2000);
-
-      return;
-    }
-
-    let point = routePoints[currentIndex];
-
-    driverMarker.setLatLng(point);
-    map.setView(point);
-
-    let progress = (currentIndex / routePoints.length)*100;
-    progressFill.style.width = progress + "%";
-
-    let stageIndex = Math.floor((currentIndex / routePoints.length)*stages.length);
-    statusText.innerText = stages[stageIndex];
-
-    currentIndex++;
-
-  }, 900);
-}
-
-/* 🌙 THEME */
-function toggleTheme() {
-  document.body.classList.toggle("dark");
-}
-
-/* INIT */
-document.addEventListener("DOMContentLoaded", loadActiveRide);
+/* AUTO REFRESH */
+setInterval(loadBooking, 5000);
 
 </script>
-
 </body>
 </html>

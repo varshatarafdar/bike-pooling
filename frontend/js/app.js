@@ -2,14 +2,23 @@
 // 🌐 API CONFIG
 // ==============================
 const API = "http://127.0.0.1:5000";
-const ORS_API_KEY =
-  "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjdjN2EzNGU3MzhjZDRiY2E5ZGMxNzI5ZmFjOTI1NjVlIiwiaCI6Im11cm11cjY0In0=";
+
+// ORS KEY
+const ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjdjN2EzNGU3MzhjZDRiY2E5ZGMxNzI5ZmFjOTI1NjVlIiwiaCI6Im11cm11cjY0In0=";
 
 let map, routeLayer;
 let startMarker, destMarker;
-
 let poolCheckInterval = null;
 
+// ==============================
+// 🔐 FIXED AUTH HEADER
+// ==============================
+function getAuthHeader() {
+  return {
+    "Authorization": "Bearer " + localStorage.getItem("token"),
+    "Content-Type": "application/json"
+  };
+}
 
 // ==============================
 // 🚀 NAVIGATION
@@ -24,7 +33,8 @@ function goTo(page) {
 // 🌍 INIT MAP
 // ==============================
 function initMap() {
-  if (!document.getElementById("map")) return;
+  const mapEl = document.getElementById("map");
+  if (!mapEl) return;
 
   map = L.map("map").setView([21.25, 81.63], 13);
 
@@ -46,87 +56,113 @@ function initMap() {
 
 
 // ==============================
-// 📍 LOCATION SETTERS
+// 📍 PICKUP
 // ==============================
 function setPickup(lat, lng) {
   window.startLat = lat;
   window.startLng = lng;
 
   if (startMarker) map.removeLayer(startMarker);
+
   startMarker = L.marker([lat, lng]).addTo(map);
 
-  document.getElementById("start").value = "Pickup Selected";
+  const el = document.getElementById("start");
+  if (el) el.value = "Pickup Selected";
 }
 
+
+// ==============================
+// 📍 DESTINATION
+// ==============================
 function setDestination(lat, lng) {
   window.destLat = lat;
   window.destLng = lng;
 
   if (destMarker) map.removeLayer(destMarker);
+
   destMarker = L.marker([lat, lng]).addTo(map);
 
-  document.getElementById("destination").value = "Destination Selected";
+  const el = document.getElementById("destination");
+  if (el) el.value = "Destination Selected";
 }
 
 
 // ==============================
-// 🔎 SEARCH (NOMINATIM)
+// 🔄 RESET
+// ==============================
+function resetSelection() {
+  if (startMarker) map.removeLayer(startMarker);
+  if (destMarker) map.removeLayer(destMarker);
+  if (routeLayer) map.removeLayer(routeLayer);
+
+  window.startLat = null;
+  window.destLat = null;
+
+  document.getElementById("start").value = "";
+  document.getElementById("destination").value = "";
+
+  showToast("🔄 Selection Reset");
+}
+
+
+// ==============================
+// 🔎 SEARCH LOCATION
 // ==============================
 async function searchLocation(query, dropdownId, isPickup) {
-
   if (!query || query.length < 3) return;
 
-  let res = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=5`
-  );
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=5`
+    );
 
-  let data = await res.json();
-  let dropdown = document.getElementById(dropdownId);
-  dropdown.innerHTML = "";
+    const data = await res.json();
+    const dropdown = document.getElementById(dropdownId);
 
-  data.forEach((place) => {
+    if (!dropdown) return;
 
-    let div = document.createElement("div");
-    div.className = "dropdown-item";
-    div.innerText = place.display_name;
+    dropdown.innerHTML = "";
 
-    div.onclick = () => {
+    data.forEach((place) => {
+      const div = document.createElement("div");
+      div.className = "dropdown-item";
+      div.innerText = place.display_name;
 
-      let lat = parseFloat(place.lat);
-      let lng = parseFloat(place.lon);
+      div.onclick = () => {
+        const lat = parseFloat(place.lat);
+        const lng = parseFloat(place.lon);
 
-      map.setView([lat, lng], 14);
+        map.setView([lat, lng], 14);
 
-      if (isPickup) {
-        setPickup(lat, lng);
-      } else {
-        setDestination(lat, lng);
-        drawRoute();
-      }
+        if (isPickup) setPickup(lat, lng);
+        else setDestination(lat, lng);
 
-      dropdown.innerHTML = "";
-    };
+        dropdown.innerHTML = "";
+      };
 
-    dropdown.appendChild(div);
-  });
+      dropdown.appendChild(div);
+    });
+
+  } catch (err) {
+    console.log("Search error:", err);
+  }
 }
 
 
 // ==============================
-// 🛣️ ROUTE (ORS)
+// 🛣 ROUTE (OPENROUTESERVICE)
 // ==============================
 async function drawRoute() {
 
   if (!window.startLat || !window.destLat) return;
 
   try {
-
-    let res = await fetch(
+    const res = await fetch(
       "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
       {
         method: "POST",
         headers: {
-          Authorization: ORS_API_KEY,
+          Authorization: `Bearer ${ORS_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -138,19 +174,21 @@ async function drawRoute() {
       }
     );
 
-    let data = await res.json();
+    const data = await res.json();
 
     if (routeLayer) map.removeLayer(routeLayer);
+
     routeLayer = L.geoJSON(data).addTo(map);
 
-  } catch {
+  } catch (err) {
     showToast("Route error ❌");
   }
 }
 
 
+
 // ==============================
-// 🚲 ADD RIDE + AUTO MATCH
+// 🚲 ADD RIDE
 // ==============================
 async function addRide() {
 
@@ -162,31 +200,34 @@ async function addRide() {
   showLoader(true);
 
   try {
-
-    let res = await fetch(API + "/add_ride", {
+    const res = await fetch(API + "/add_ride", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: localStorage.getItem("token"),
-      },
+      headers: getAuthHeader(),
       body: JSON.stringify({
-        start: document.getElementById("start").value,
-        destination: document.getElementById("destination").value,
+        start: document.getElementById("start")?.value,
+        destination: document.getElementById("destination")?.value,
         start_lat: window.startLat,
         start_lng: window.startLng,
         dest_lat: window.destLat,
         dest_lng: window.destLng,
-        time: document.getElementById("time").value,
+        time: document.getElementById("time")?.value,
       }),
     });
 
-    let data = await res.json();
+    const data = await res.json();
 
-    showToast("🔍 Searching for match...");
+    showToast(data.message || "🎉 Ride Booked Successfully!");
 
-    startAutoMatch();
+    // ✅ IF MATCH FOUND → DIRECT GO ACTIVE RIDE
+    if (data.match_found) {
+      showToast("⚡ Instant Match Found!");
+      setTimeout(() => goTo("active_ride.html"), 1200);
+    } else {
+      startAutoMatch();
+    }
 
-  } catch {
+  } catch (err) {
+    console.log(err);
     showToast("Error creating ride ❌");
   }
 
@@ -194,8 +235,9 @@ async function addRide() {
 }
 
 
+
 // ==============================
-// 🔄 AUTO MATCH POLLING
+// 🔄 AUTO MATCH (FIXED ENDPOINT)
 // ==============================
 function startAutoMatch() {
 
@@ -203,45 +245,68 @@ function startAutoMatch() {
 
   poolCheckInterval = setInterval(async () => {
 
-    let res = await fetch(API + "/check_match", {
-      headers: {
-        Authorization: localStorage.getItem("token"),
-      },
-    });
+    try {
 
-    let data = await res.json();
+      const res = await fetch(API + "/check_match", {
+        headers: getAuthHeader()
+      });
 
-    if (data.match_found) {
+      const data = await res.json();
 
-      clearInterval(poolCheckInterval);
+      if (data.match_found) {
+        clearInterval(poolCheckInterval);
 
-      showToast("🎉 Match Found!");
+        showToast("🎉 Match Found!");
 
-      setTimeout(() => {
-        goTo("active_ride.html");
-      }, 1200);
+        setTimeout(() => {
+          goTo("active_ride.html");
+        }, 1200);
+      }
+
+    } catch (err) {
+      console.log(err);
     }
 
   }, 3000);
 }
 
 
+
+
 // ==============================
-// 🔔 UI HELPERS
+// 🔔 TOAST
 // ==============================
 function showToast(msg) {
-  let t = document.getElementById("toast");
+  const t = document.getElementById("toast");
   if (!t) return;
+
   t.innerText = msg;
   t.style.display = "block";
 
-  setTimeout(() => (t.style.display = "none"), 2500);
+  setTimeout(() => {
+    t.style.display = "none";
+  }, 2500);
 }
 
+// ==============================
+// ⏳ LOADER
+// ==============================
 function showLoader(show) {
-  let l = document.getElementById("loader");
+  const l = document.getElementById("loader");
   if (!l) return;
+
   l.style.display = show ? "block" : "none";
+}
+
+
+// ==============================
+// 📱 MOBILE MENU
+// ==============================
+function toggleMenu() {
+  const menu = document.getElementById("mobileMenu");
+  if (!menu) return;
+
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
 }
 
 
@@ -251,8 +316,8 @@ function showLoader(show) {
 document.addEventListener("DOMContentLoaded", () => {
   initMap();
 
-  let start = document.getElementById("start");
-  let dest = document.getElementById("destination");
+  const start = document.getElementById("start");
+  const dest = document.getElementById("destination");
 
   if (start) {
     start.addEventListener("input", (e) =>

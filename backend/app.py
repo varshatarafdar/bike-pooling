@@ -16,9 +16,10 @@ import jwt
 import datetime
 
 # ==============================
-# 🔗 CONFIG
+# 🔗 CONFIG + DB
 # ==============================
 from config.config import SECRET_KEY
+from config.config import get_db_connection
 
 # ==============================
 # 🔗 ROUTES IMPORT
@@ -28,12 +29,10 @@ from routes.rides import ride_routes
 from routes.ride_request import request_routes
 from routes.match import match_bp
 
-# optional safe import
 try:
     from routes.booking import booking_routes
 except:
     booking_routes = None
-
 
 # ==============================
 # 🚀 APP INIT
@@ -49,7 +48,6 @@ socketio = SocketIO(
     async_mode="threading"
 )
 
-
 # ==============================
 # 🔐 JWT AUTH MIDDLEWARE
 # ==============================
@@ -60,10 +58,9 @@ def token_required(f):
         token = request.headers.get("Authorization")
 
         if not token:
-            return jsonify({"error": "Token missing"}), 401
+            return jsonify({"status": False, "message": "Token missing"}), 401
 
         try:
-            # Accept both formats: Bearer token OR raw token
             if "Bearer " in token:
                 token = token.split(" ")[1]
 
@@ -73,16 +70,16 @@ def token_required(f):
                 algorithms=["HS256"]
             )
 
-            request.user = decoded
+            # ✅ FIXED: only store user_id
+            request.user = decoded["user_id"]
 
-        except Exception:
-            return jsonify({"error": "Invalid or expired token"}), 401
+        except Exception as e:
+            print("JWT ERROR:", e)
+            return jsonify({"status": False, "message": "Invalid or expired token"}), 401
 
         return f(*args, **kwargs)
 
     return wrapper
-
-
 # ==============================
 # 💳 PAYMENT API (DEMO)
 # ==============================
@@ -93,12 +90,11 @@ def pay():
     amount = data.get("amount", 50)
 
     return jsonify({
-        "status": "success",
+        "status": True,
         "message": "Payment Successful 💳",
         "amount": amount,
         "time": str(datetime.datetime.utcnow())
     })
-
 
 # ==============================
 # ⭐ RATE RIDE
@@ -121,122 +117,98 @@ def rate_ride():
     """, (rating, booking_id))
 
     conn.commit()
-
     cursor.close()
     conn.close()
 
-    return jsonify({"message": "Rating saved"})
+    return jsonify({"status": True, "message": "Rating saved"})
 
 # ==============================
-# 🧠 SMART MATCH ENGINE (HOOK FOR ML)
+# 🧠 SMART MATCH ENGINE (PLACEHOLDER)
 # ==============================
 @app.route("/smart_match", methods=["POST"])
 @token_required
 def smart_match():
-
     return jsonify({
+        "status": True,
         "message": "🤖 Smart Matching Activated",
         "matches": []
     })
 
-
 # ==============================
-# 🔗 REGISTER BLUEPRINTS
+# 👤 GET PROFILE
 # ==============================
-app.register_blueprint(auth_routes, url_prefix="/auth")
-app.register_blueprint(ride_routes)
-app.register_blueprint(request_routes)
-app.register_blueprint(match_bp)
+@app.route("/profile", methods=["GET"])
+@token_required
+def profile():
 
-if booking_routes:
-    app.register_blueprint(booking_routes)
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
 
+    cursor.execute("""
+        SELECT id, name, email, phone, has_bike 
+        FROM users 
+        WHERE id=%s
+    """, (request.user,))
 
+    user = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if not user:
+        return jsonify({
+            "status": False,
+            "message": "User not found"
+        }), 404
+
+    # 🔥 IMPORTANT: return clean structure for frontend
+    return jsonify(user)
 # ==============================
-# 🔌 SOCKET.IO EVENTS
+# ✏️ UPDATE PROFILE
 # ==============================
+@app.route("/profile", methods=["PUT"])
+@token_required
+def update_profile():
 
-@socketio.on('connect')
-def handle_connect():
-    print("🔌 Client Connected")
+    data = request.json
 
+    name = data.get("name")
+    email = data.get("email")
+    phone = data.get("phone")
+    has_bike = data.get("has_bike")
 
-@socketio.on('join_room')
-def handle_join(data):
-    room = str(data.get("user_id"))
-    join_room(room)
-    print(f"👤 Joined room: {room}")
+    if name is None or email is None:
+        return jsonify({
+            "status": False,
+            "message": "Missing required fields"
+        }), 400
 
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-@socketio.on('ride_update')
-def ride_update(data):
-    socketio.emit('ride_update', data, broadcast=True)
+    cursor.execute("""
+        UPDATE users 
+        SET name=%s, email=%s, phone=%s, has_bike=%s
+        WHERE id=%s
+    """, (
+        name,
+        email,
+        phone,
+        has_bike,
+        request.user   # ✅ FIXED (no [user_id])
+    ))
 
+    conn.commit()
+    cursor.close()
+    conn.close()
 
-@socketio.on('pool_created')
-def pool_created(data):
-
-    driver = str(data.get("driver_id"))
-    passenger = str(data.get("passenger_id"))
-
-    socketio.emit("pool_created", data, room=driver)
-    socketio.emit("pool_created", data, room=passenger)
-
-
-@socketio.on("chat_message")
-def chat(data):
-    emit("chat_message", data, broadcast=True)
-
-
-@socketio.on("location_update")
-def location_update(data):
-    emit("location_update", data, broadcast=True)
-
-
-# ==============================
-# 🏠 ROOT ROUTE
-# ==============================
-@app.route('/')
-def home():
     return jsonify({
-        "message": "🚲 Bike Pooling System API Running Successfully"
+        "status": True,
+        "message": "Profile updated successfully ✅"
     })
-
-
 # ==============================
-# 🩺 HEALTH CHECK
+# 📊 ADMIN STATS
 # ==============================
-@app.route("/health")
-def health():
-    return jsonify({
-        "status": "ok",
-        "time": str(datetime.datetime.utcnow())
-    })
-
-
-# ==============================
-# ❌ ERROR HANDLING
-# ==============================
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"error": "Route not found"}), 404
-
-
-@app.errorhandler(500)
-def server_error(error):
-    return jsonify({"error": "Internal server error"}), 500
-
-
-# ==============================
-# ▶️ RUN SERVER
-# ==============================
-if __name__ == "__main__":
-    socketio.run(
-        app,
-        debug=True,
-        host="0.0.0.0",
-        port=5000
-    )
 @app.route("/admin_stats")
 def admin_stats():
 
@@ -259,55 +231,97 @@ def admin_stats():
     conn.close()
 
     return jsonify({
+        "status": True,
         "users": users,
         "rides": rides,
         "matches": matches,
         "revenue": revenue
     })
-@app.route("/profile")
-@token_required
-def profile():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("SELECT name,email,has_bike FROM users WHERE id=%s",
-                   (request.user["user_id"],))
+# ==============================
+# 🔗 REGISTER BLUEPRINTS
+# ==============================
+app.register_blueprint(auth_routes, url_prefix="/auth")
+app.register_blueprint(ride_routes)
+app.register_blueprint(request_routes)
+app.register_blueprint(match_bp)
 
-    user = cursor.fetchone()
+if booking_routes:
+    app.register_blueprint(booking_routes)
 
-    cursor.close()
-    conn.close()
+# ==============================
+# 🔌 SOCKET.IO EVENTS
+# ==============================
+@socketio.on('connect')
+def handle_connect():
+    print("🔌 Client Connected")
 
-    return jsonify(user)
-@app.route("/update_profile", methods=["POST"])
-@token_required
-def update_profile():
-    name = request.json.get("name")
+@socketio.on('join_room')
+def handle_join(data):
+    room = str(data.get("user_id"))
+    join_room(room)
+    print(f"👤 Joined room: {room}")
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+@socketio.on('ride_update')
+def ride_update(data):
+    socketio.emit('ride_update', data, broadcast=True)
 
-    cursor.execute("UPDATE users SET name=%s WHERE id=%s",
-                   (name, request.user["user_id"]))
+@socketio.on('pool_created')
+def pool_created(data):
+    driver = str(data.get("driver_id"))
+    passenger = str(data.get("passenger_id"))
 
-    conn.commit()
-    cursor.close()
-    conn.close()
+    socketio.emit("pool_created", data, room=driver)
+    socketio.emit("pool_created", data, room=passenger)
 
-    return jsonify({"message":"updated"})
-@app.route("/update_bike", methods=["POST"])
-@token_required
-def update_bike():
-    has_bike = request.json.get("has_bike")
+@socketio.on("chat_message")
+def chat(data):
+    emit("chat_message", data, broadcast=True)
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+@socketio.on("location_update")
+def location_update(data):
+    emit("location_update", data, broadcast=True)
 
-    cursor.execute("UPDATE users SET has_bike=%s WHERE id=%s",
-                   (has_bike, request.user["user_id"]))
+# ==============================
+# 🏠 ROOT ROUTE
+# ==============================
+@app.route('/')
+def home():
+    return jsonify({
+        "status": True,
+        "message": "🚲 Bike Pooling System API Running Successfully"
+    })
 
-    conn.commit()
-    cursor.close()
-    conn.close()
+# ==============================
+# 🩺 HEALTH CHECK
+# ==============================
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "ok",
+        "time": str(datetime.datetime.utcnow())
+    })
 
-    return jsonify({"message":"updated"})
+# ==============================
+# ❌ ERROR HANDLING
+# ==============================
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"status": False, "message": "Route not found"}), 404
+
+@app.errorhandler(500)
+def server_error(error):
+    return jsonify({"status": False, "message": "Internal server error"}), 500
+
+# ==============================
+# ▶️ RUN SERVER
+# ==============================
+if __name__ == "__main__":
+    socketio.run(
+        app,
+        debug=True,
+        host="0.0.0.0",
+        port=5000
+    )
+
+    

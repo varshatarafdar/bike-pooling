@@ -12,13 +12,19 @@
 
 <style>
 
-/* ================= BACKGROUND ================= */
+/* ================= GLOBAL ================= */
+* {
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Poppins',sans-serif;
+}
+
 body {
-  height: 100vh;
+  height:100vh;
   display:flex;
   justify-content:center;
   align-items:center;
-  font-family:Poppins;
   background: linear-gradient(-45deg,#000,#111,#FFD700,#000);
   background-size:400% 400%;
   animation:bg 10s infinite;
@@ -85,20 +91,31 @@ button {
   transition:0.3s;
 }
 
-button:hover {
+button:disabled {
+  opacity:0.6;
+  cursor:not-allowed;
+}
+
+button:hover:not(:disabled) {
   transform:scale(1.05);
 }
 
-/* ================= LINK ================= */
-a {
-  color:#FFD700;
-  cursor:pointer;
+/* ================= TOAST ================= */
+.toast {
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:#FFD700;
+  color:black;
+  padding:12px 18px;
+  border-radius:10px;
+  display:none;
+  animation:fade 0.5s ease;
 }
 
-.small {
-  margin-top:12px;
-  font-size:13px;
-  opacity:0.8;
+@keyframes fade {
+  from{opacity:0;transform:translateY(20px);}
+  to{opacity:1;transform:translateY(0);}
 }
 
 /* ================= LOADER ================= */
@@ -115,6 +132,17 @@ a {
 
 @keyframes spin {
   100%{transform:rotate(360deg);}
+}
+
+.small {
+  margin-top:12px;
+  font-size:13px;
+  opacity:0.8;
+}
+
+a {
+  color:#FFD700;
+  cursor:pointer;
 }
 
 </style>
@@ -156,7 +184,7 @@ a {
     </select>
   </div>
 
-  <button onclick="register()">Create Account</button>
+  <button id="registerBtn" onclick="register()">Create Account</button>
 
   <div class="loader" id="loader"></div>
 
@@ -166,50 +194,71 @@ a {
 
 </div>
 
+<div class="toast" id="toast"></div>
+
+<script src="js/api.js"></script>
+
 <script>
 
+function showToast(msg){
+  let t = document.getElementById("toast");
+  t.innerText = msg;
+  t.style.display = "block";
+
+  setTimeout(() => t.style.display = "none", 2500);
+}
+
 /* ================= REGISTER ================= */
-function register(){
+async function register(){
 
   let loader = document.getElementById("loader");
-  loader.style.display = "block";
+  let btn = document.getElementById("registerBtn");
 
   let data = {
     name: document.getElementById("name").value.trim(),
     email: document.getElementById("email").value.trim(),
     phone: document.getElementById("phone").value.trim(),
     password: document.getElementById("password").value.trim(),
-    has_bike: document.getElementById("hasBike").value === "1"
+    has_bike: parseInt(document.getElementById("hasBike").value)
   };
 
   if(!data.name || !data.email || !data.password){
-    alert("Fill required fields");
-    loader.style.display = "none";
+    showToast("Fill required fields ⚠️");
     return;
   }
 
-  fetch("http://127.0.0.1:5000/auth/register", {   // ✅ FIXED ROUTE
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify(data)
-  })
-  .then(res => res.json())
-  .then(res => {
+  loader.style.display = "block";
+  btn.disabled = true;
+
+  try {
+
+    let res = await fetch("http://127.0.0.1:5000/auth/register", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(data)
+    });
+
+    let result = await res.json();
 
     loader.style.display = "none";
+    btn.disabled = false;
 
-    alert(res.message);
+    if(result.status){
+      showToast("Account Created 🎉");
 
-    if(res.message.includes("success")){
-      window.location.href = "login.html";
+      setTimeout(() => {
+        window.location.href = "login.html";
+      }, 1200);
+
+    } else {
+      showToast(result.message || "Registration failed ❌");
     }
 
-  })
-  .catch(() => {
+  } catch(err){
     loader.style.display = "none";
-    alert("Server error");
-  });
-
+    btn.disabled = false;
+    showToast("Server error ⚠️");
+  }
 }
 
 /* ================= NAV ================= */

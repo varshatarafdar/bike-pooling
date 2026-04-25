@@ -1,245 +1,238 @@
 from flask import Blueprint, request, jsonify
-from utils.helpers import token_required, get_db_connection
-from models.ride_model import create_ride, get_matching_rides
-from routes.match import find_best_match, calculate_distance
+from utils.helpers import get_db_connection
+from utils.auth_middleware import token_required
+from models.ride_model import calculate_distance
+from datetime import datetime
 
 ride_routes = Blueprint('rides', __name__)
 
 
 # ==============================
-# 🚲 ADD RIDE + AUTO MATCH ENGINE
+# 🚲 ADD RIDE + AUTO MATCH
 # ==============================
 @ride_routes.route('/add_ride', methods=['POST'])
 @token_required
 def add_ride():
-
-    conn = None
-    cursor = None
-
     try:
         data = request.json
-        user_id = request.user['user_id']
 
-        required_fields = [
-            "start", "destination",
-            "start_lat", "start_lng",
-            "dest_lat", "dest_lng",
-            "time"
-        ]
-
-        for field in required_fields:
-            if field not in data:
-                return jsonify({"message": f"{field} is required"}), 400
-
-        # ==============================
-        # 🚀 CREATE RIDE
-        # ==============================
-        create_ride(
-            user_id,
-            data['start'],
-            data['destination'],
-            data['start_lat'],
-            data['start_lng'],
-            data['dest_lat'],
-            data['dest_lng'],
-            data['time']
-        )
+        # ✅ FIXED USER ID ACCESS
+        user_id = request.user["user_id"]
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
         # ==============================
-        # 🔥 GET LATEST USER RIDE
+        # 🚀 INSERT RIDE
         # ==============================
         cursor.execute("""
-            SELECT r.*, u.has_bike
-            FROM rides r
-            JOIN users u ON r.user_id = u.id
-            WHERE r.user_id=%s
-            ORDER BY r.created_at DESC
-            LIMIT 1
+            INSERT INTO rides 
+            (user_id, start_location, destination,
+             start_lat, start_lng, dest_lat, dest_lng,
+             ride_time, status)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'searching')
+        """, (
+            user_id,
+            data['start'],
+            data['destination'],
+            float(data['start_lat']),
+            float(data['start_lng']),
+            float(data['dest_lat']),
+            float(data['dest_lng']),
+            data['time']
+        ))
+
+        conn.commit()
+        ride_id = cursor.lastrowid
+
+        # ==============================
+        # 🤖 AUTO MATCH TRIGGER
+        # ==============================
+        match_found = auto_match(user_id, ride_id, conn, cursor)
+
+        return jsonify({
+            "message": "Ride Booked Successfully",
+            "ride_id": ride_id,
+            "match_found": match_found
+        })
+
+    except Exception as e:
+        print("ADD RIDE ERROR:", e)
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# ==============================
+# 🤖 AUTO MATCH FUNCTION
+# ==============================
+def auto_match(user_id, ride_id, conn, cursor):
+
+    # Get current ride
+    cursor.execute("SELECT * FROM rides WHERE ride_id=%s", (ride_id,))
+    my_ride = cursor.fetchone()
+
+    if not my_ride:
+        return False
+
+    # Get other rides
+    cursor.execute("""
+        SELECT r.*, u.has_bike
+        FROM rides r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.user_id != %s AND r.status='searching'
+    """, (user_id,))
+
+    rides = cursor.fetchall()
+
+    for r in rides:
+
+        # ==============================
+        # 📍 DISTANCE CHECK
+        # ==============================
+        pickup_dist = calculate_distance(
+            my_ride["start_lat"], my_ride["start_lng"],
+            r["start_lat"], r["start_lng"]
+        )
+
+        drop_dist = calculate_distance(
+            my_ride["dest_lat"], my_ride["dest_lng"],
+            r["dest_lat"], r["dest_lng"]
+        )
+
+        # ==============================
+        # ⏱ SAFE TIME CHECK (FIXED)
+        # ==============================
+        try:
+            t1 = datetime.strptime(str(my_ride["ride_time"])[:16], "%Y-%m-%d %H:%M")
+            t2 = datetime.strptime(str(r["ride_time"])[:16], "%Y-%m-%d %H:%M")
+
+            time_diff = abs((t1 - t2).total_seconds()) / 60
+
+        except:
+            time_diff = 9999
+
+        # ==============================
+        # 🎯 MATCH CONDITIONS
+        # ==============================
+        if pickup_dist < 2 and drop_dist < 2 and time_diff <= 15:
+
+            # DRIVER LOGIC
+            if r["has_bike"]:
+                driver = r["user_id"]
+                passenger = user_id
+            else:
+                driver = user_id
+                passenger = r["user_id"]
+
+            # ==============================
+            # 💰 FARE (simple logic)
+            # ==============================
+            fare = round((pickup_dist + drop_dist) * 10, 2)
+
+            # ==============================
+            # 🤝 CREATE BOOKING
+            # ==============================
+            cursor.execute("""
+                INSERT INTO bookings 
+                (driver_id, passenger_id, ride_id, fare, status)
+                VALUES (%s,%s,%s,%s,'matched')
+            """, (driver, passenger, ride_id, fare))
+
+            # ==============================
+            # 🔄 UPDATE RIDES
+            # ==============================
+            cursor.execute("""
+                UPDATE rides SET status='matched'
+                WHERE ride_id IN (%s,%s)
+            """, (my_ride["ride_id"], r["ride_id"]))
+
+            conn.commit()
+            return True
+
+    return False
+
+
+# ==============================
+# 📍 GET MATCHES (SAFE)
+# ==============================
+@ride_routes.route('/my_matches', methods=['GET'])
+@token_required
+def my_matches():
+    try:
+        user_id = request.user["user_id"]
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # get my ride
+        cursor.execute("""
+            SELECT * FROM rides 
+            WHERE user_id=%s AND status='searching'
+            ORDER BY created_at DESC LIMIT 1
         """, (user_id,))
 
-        user_ride = cursor.fetchone()
+        my_ride = cursor.fetchone()
 
-        # ==============================
-        # 🔍 FETCH ALL SEARCHING RIDES
-        # ==============================
+        if not my_ride:
+            return jsonify({"matches": []})
+
+        # other rides
         cursor.execute("""
-            SELECT r.*, u.has_bike, u.name
+            SELECT r.*, u.name, u.phone, u.has_bike
             FROM rides r
             JOIN users u ON r.user_id = u.id
             WHERE r.user_id != %s AND r.status='searching'
         """, (user_id,))
 
-        all_rides = cursor.fetchall()
+        rides = cursor.fetchall()
 
-        # ==============================
-        # 🧠 FIND BEST MATCH
-        # ==============================
-        best_match = find_best_match(user_ride, all_rides)
+        matches = []
 
-        if best_match:
+        for r in rides:
 
-            # 🚗 DRIVER / PASSENGER LOGIC
-            if user_ride["has_bike"]:
-                driver_id = user_id
-                passenger_id = best_match["user_id"]
-                ride_id = user_ride["ride_id"]
-            else:
-                driver_id = best_match["user_id"]
-                passenger_id = user_id
-                ride_id = best_match["ride_id"]
-
-            # 📏 DISTANCE + FARE
-            distance = calculate_distance(
-                user_ride["start_lat"], user_ride["start_lng"],
-                user_ride["dest_lat"], user_ride["dest_lng"]
+            pickup_dist = calculate_distance(
+                my_ride["start_lat"], my_ride["start_lng"],
+                r["start_lat"], r["start_lng"]
             )
 
-            fare = round(distance * 10, 2)
+            drop_dist = calculate_distance(
+                my_ride["dest_lat"], my_ride["dest_lng"],
+                r["dest_lat"], r["dest_lng"]
+            )
 
-            # ==============================
-            # 🚀 CREATE BOOKING
-            # ==============================
-            cursor.execute("""
-                INSERT INTO bookings
-                (driver_id, passenger_id, ride_id, fare, status)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (driver_id, passenger_id, ride_id, fare, "matched"))
+            # TIME FILTER (±15 min)
+            t1 = str(my_ride["ride_time"])[:5]
+            t2 = str(r["ride_time"])[:5]
 
-            # ==============================
-            # 🔄 UPDATE RIDE STATUS
-            # ==============================
-            cursor.execute("""
-                UPDATE rides SET status='matched'
-                WHERE ride_id IN (%s, %s)
-            """, (user_ride["ride_id"], best_match["ride_id"]))
+            time_diff = abs(
+                (datetime.strptime(t1, "%H:%M") -
+                 datetime.strptime(t2, "%H:%M")
+                ).total_seconds() / 60
+            )
 
-            conn.commit()
+            if pickup_dist <= 2 and drop_dist <= 2 and time_diff <= 15:
+                matches.append({
+                    "ride_id": r["ride_id"],
+                    "user_id": r["user_id"],
+                    "name": r["name"],
+                    "phone": r["phone"],
+                    "has_bike": r["has_bike"],
+                    "start": r["start_location"],
+                    "destination": r["destination"],
+                    "pickup_distance": pickup_dist,
+                    "drop_distance": drop_dist,
+                    "time": r["ride_time"]
+                })
 
-            return jsonify({
-                "message": "🎉 Match Found Successfully!",
-                "status": "matched",
-                "driver_id": driver_id,
-                "passenger_id": passenger_id,
-                "fare": fare
-            })
-
-        # ==============================
-        # ❌ NO MATCH FOUND
-        # ==============================
-        return jsonify({
-            "message": "🔍 Searching for riders...",
-            "status": "searching"
-        })
-
-    except Exception as e:
-        print("RIDE ERROR:", e)
-        return jsonify({
-            "message": "Failed to create ride",
-            "error": str(e)
-        }), 500
-
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-
-
-# ==============================
-# 📍 GET LAST RIDE
-# ==============================
-@ride_routes.route('/my_last_ride', methods=['GET'])
-@token_required
-def my_last_ride():
-
-    conn = None
-    cursor = None
-
-    try:
-        user_id = request.user['user_id']
-
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-
-        cursor.execute("""
-            SELECT * FROM rides
-            WHERE user_id=%s
-            ORDER BY created_at DESC
-            LIMIT 1
-        """, (user_id,))
-
-        ride = cursor.fetchone()
-
-        if not ride:
-            return jsonify({"message": "No ride found"}), 404
-
-        return jsonify(ride)
+        return jsonify({"matches": matches})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
     finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-
-
-# ==============================
-# 🔥 GET MATCHES (SMART VIEW)
-# ==============================
-@ride_routes.route('/my_matches', methods=['GET'])
-@token_required
-def my_matches():
-
-    conn = None
-    cursor = None
-
-    try:
-        user_id = request.user['user_id']
-
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-
-        cursor.execute("""
-            SELECT * FROM rides
-            WHERE user_id=%s
-            ORDER BY created_at DESC
-            LIMIT 1
-        """, (user_id,))
-
-        user_ride = cursor.fetchone()
-
-        if not user_ride:
-            return jsonify({
-                "matches": [],
-                "message": "Create a ride first"
-            })
-
-        matches = get_matching_rides(
-            user_id,
-            user_ride["start_lat"],
-            user_ride["start_lng"],
-            user_ride["dest_lat"],
-            user_ride["dest_lng"],
-            user_ride["time"]
-        )
-
-        return jsonify({
-            "matches": matches
-        })
-
-    except Exception as e:
-        return jsonify({
-            "message": "Match error",
-            "error": str(e)
-        }), 500
-
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        cursor.close()
+        conn.close()
+   

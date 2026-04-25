@@ -5,57 +5,128 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Admin Dashboard</title>
+<title>Admin Dashboard - BikePool</title>
 
 <link rel="stylesheet" href="css/styles.css">
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+/* ================= GLOBAL ================= */
+body{
+  margin:0;
+  font-family:Poppins;
+  background:linear-gradient(-45deg,#0f0f0f,#1a1a1a,#000,#FFD700);
+  background-size:400% 400%;
+  animation:bg 10s infinite;
+  color:white;
+}
+
+@keyframes bg{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+
+/* ================= NAVBAR ================= */
+.navbar{
+  display:flex;
+  justify-content:space-between;
+  padding:15px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(12px);
+}
+
+/* ================= GRID ================= */
+.dashboard-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:15px;
+  padding:20px;
+}
+
+/* ================= CARDS ================= */
+.card{
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(12px);
+  padding:20px;
+  border-radius:20px;
+  text-align:center;
+  transition:0.3s;
+  animation:fadeIn 0.8s ease;
+}
+
+.card:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 20px #FFD700;
+}
+
+.card h2{
+  font-size:28px;
+  margin:0;
+  color:#FFD700;
+}
+
+/* ================= CHART ================= */
+.chart-container{
+  margin:20px;
+  padding:20px;
+  background:rgba(255,255,255,0.08);
+  border-radius:20px;
+}
+
+/* ================= ANIMATION ================= */
+@keyframes fadeIn{
+  from{opacity:0; transform:translateY(20px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+</style>
 
 </head>
 
-<body class="light fade">
+<body>
 
-<div class="bg-gradient"></div>
-
-<header class="navbar glass">
-  <div class="logo">📊 Admin Panel</div>
-
-  <div class="nav-actions">
-    <button class="icon-btn" onclick="toggleTheme()">🌙</button>
-  </div>
+<!-- 🔝 NAVBAR -->
+<header class="navbar">
+  <div>📊 Admin Dashboard</div>
+  <button onclick="toggleTheme()">🌙</button>
 </header>
 
 <!-- 🔥 STATS -->
-<div style="display:grid; grid-template-columns:1fr 1fr;">
+<div class="dashboard-grid">
 
   <div class="card">
     <h2 id="usersCount">0</h2>
-    <p>Total Users</p>
+    <p>👤 Users</p>
   </div>
 
   <div class="card">
     <h2 id="ridesCount">0</h2>
-    <p>Total Rides</p>
+    <p>🚲 Rides</p>
   </div>
 
   <div class="card">
     <h2 id="matchesCount">0</h2>
-    <p>Total Matches</p>
+    <p>🤝 Matches</p>
   </div>
 
   <div class="card">
     <h2 id="revenue">₹0</h2>
-    <p>Total Revenue</p>
+    <p>💰 Revenue</p>
   </div>
 
 </div>
 
 <!-- 📊 CHART -->
-<canvas id="chart" style="margin:20px;"></canvas>
+<div class="chart-container">
+  <canvas id="chart"></canvas>
+</div>
 
 <script>
 
 const API = "http://127.0.0.1:5000";
+let chart;
 
 /* 🌙 THEME */
 function toggleTheme(){
@@ -77,11 +148,42 @@ async function loadStats(){
 
     renderChart(data);
 
-  } catch {
+  }catch{
     console.log("Error loading stats");
   }
 }
 
+/* 📊 CHART RENDER */
+function renderChart(data){
+
+  let ctx = document.getElementById("chart");
+
+  if(chart) chart.destroy();
+
+  chart = new Chart(ctx,{
+    type:"bar",
+    data:{
+      labels:["Users","Rides","Matches","Revenue"],
+      datasets:[{
+        label:"BikePool Stats",
+        data:[
+          data.users,
+          data.rides,
+          data.matches,
+          data.revenue
+        ]
+      }]
+    },
+    options:{
+      responsive:true
+    }
+  });
+}
+
+/* 🔄 AUTO REFRESH */
+setInterval(loadStats, 5000);
+
+/* INIT */
 loadStats();
 
 </script>
